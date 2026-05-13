@@ -1,0 +1,18 @@
+[project]
+name = "travel-management-backend"
+version = "0.1.0"
+description = "旅游业务管理系统后端"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi==0.136.1",
+    "uvicorn[standard]==0.40.0",
+    "sqlalchemy==2.0.48",
+    "psycopg2-binary==2.9.12",
+    "pydantic==2.13.3",
+    "apscheduler==3.11.2",
+    "python-multipart==0.0.27",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

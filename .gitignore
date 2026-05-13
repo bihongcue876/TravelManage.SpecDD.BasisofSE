@@ -1,0 +1,15 @@
+docs/
+
+.venv/
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+backend/__pycache__/
+backend/.venv/
+backend/.env
+backend/*.pyc
+backend/*.pyo
+backend/routers/__pycache__/
+backend/services/__pycache__/
