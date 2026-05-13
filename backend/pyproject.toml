@@ -14,5 +14,20 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["."]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-bdd>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "aiosqlite>=0.19.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["tests*"]

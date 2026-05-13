@@ -13,3 +13,16 @@ backend/*.pyc
 backend/*.pyo
 backend/routers/__pycache__/
 backend/services/__pycache__/
+
+backend/tests/__pycache__/
+backend/*.egg-info/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.tox/
+backend/.mypy_cache/
+backend/test.db
+backend/test_*.db
+.pytest_cache/
+.coverage
+htmlcov/

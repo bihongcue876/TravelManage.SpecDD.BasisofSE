@@ -1,0 +1,15 @@
+fastapi==0.136.1
+uvicorn[standard]==0.40.0
+sqlalchemy==2.0.48
+psycopg2-binary==2.9.12
+pydantic==2.13.3
+apscheduler==3.11.2
+python-multipart==0.0.27
+python-dotenv>=1.0.0
+
+[dev]
+pytest>=7.4.0
+pytest-bdd>=7.0.0
+pytest-asyncio>=0.21.0
+httpx>=0.24.0
+aiosqlite>=0.19.0

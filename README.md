@@ -52,6 +52,27 @@ pnpm dev
 安装：`pnpm install`
 启动：`pnpm dev`
 
+### 测试
+
+项目使用 BDD（行为驱动开发）测试框架 pytest-bdd，所有测试位于 `backend/tests/` 目录。
+
+```bash
+# 安装测试依赖
+cd backend
+uv pip install -r requirements-dev.txt
+
+# 运行所有测试（红灯验证）
+uv run pytest tests/ -v
+
+# 运行特定测试文件
+uv run pytest tests/test_applications.py -v
+
+# 查看测试收集
+uv run pytest tests/ --collect-only -q
+```
+
+> 测试当前处于 SDD 第三阶段"红灯"状态：共 **137 个测试场景**，所有步骤函数均未实现（预期行为）。详细进度见 [doc/04_TEST_WORKINGPROCESS.MD](doc/04_TEST_WORKINGPROCESS.MD)。
+
 
 
 ## 项目简介
