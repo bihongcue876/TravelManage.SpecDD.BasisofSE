@@ -61,7 +61,7 @@ function UserProfile() {
           {roleOptions.map((r) => (
             <div key={r.value} style={{ marginBottom: 8 }}>
               <Tag
-                color={role === r.value ? 'blue' : 'default'}
+                color={r.value === 'admin' ? 'blue' : role === r.value ? 'blue' : 'default'}
                 style={{ marginRight: 8 }}
               >
                 {r.icon} {r.label}

@@ -66,7 +66,7 @@ function App() {
         <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
           <Space style={{ cursor: 'pointer', color: 'white' }}>
             <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#87d068' }} />
-            <span>张前台</span>
+            <span>admin</span>
           </Space>
         </Dropdown>
       </Header>
