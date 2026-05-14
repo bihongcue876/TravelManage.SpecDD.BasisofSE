@@ -145,7 +145,7 @@ function ApplyCreate() {
               <Button type="primary" htmlType="submit" loading={loading}>
                 提交申请
               </Button>
-              <Button onClick={() => navigate('/')}>
+              <Button onClick={() => navigate('/groups')}>
                 取消
               </Button>
             </Space>
