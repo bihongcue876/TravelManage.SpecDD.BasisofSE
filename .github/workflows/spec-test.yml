@@ -1,0 +1,58 @@
+name: Spec-Driven Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          uv sync
+
+      - name: Run BDD tests with Allure
+        run: |
+          cd backend
+          uv run pytest tests/ --alluredir=allure-results --tb=short
+        env:
+          DATABASE_URL: sqlite:///:memory:
+
+      - name: Generate Allure report
+        if: always()
+        run: |
+          npm install -g allure-commandline
+          cd backend
+          allure generate allure-results -o allure-report --clean
+
+      - name: Upload Allure report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: backend/allure-report/
+
+      - name: Deploy report to GitHub Pages
+        if: github.ref == 'refs/heads/main' && success()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./backend/allure-report
+          destination_dir: spec-report

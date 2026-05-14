@@ -26,3 +26,8 @@ backend/test_*.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Allure
+backend/allure-results/
+backend/allure-report/
+docs/reports/

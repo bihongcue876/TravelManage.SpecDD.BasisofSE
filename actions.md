@@ -24,24 +24,37 @@
 ## 依赖管理升级
 
 15. 更新 requirements.txt 到支持 Python 3.14 的最新版本
-    - FastAPI: 0.109.0 → 0.136.1
-    - Uvicorn: 0.27.0 → 0.40.0
-    - SQLAlchemy: 2.0.25 → 2.0.48
-    - psycopg2-binary: 2.9.9 → 2.9.12
-    - Pydantic: 2.5.3 → 2.13.3
-    - APScheduler: 3.10.4 → 3.11.2
-    - python-multipart: 0.0.6 → 0.0.27
-
 16. 创建 pyproject.toml 文件，采用现代 Python 项目标准
-    - 配置项目元数据和依赖
-    - 设置 Python 3.14+ 要求
-    - 配置 hatch 构建系统
-
 17. 生成 uv.lock 文件，锁定依赖版本确保团队环境一致
-
 18. 更新 README.md 快速启动部分
-    - 使用 uv 命令替代 pip
-    - 优化文档结构和格式
 
-## 问题与诊断
+## 第三阶段：BDD 测试骨架
+
+19. 编写 5 个 Feature 文件（137 个场景）
+20. 设置测试夹具（conftest.py）- TestClient + SQLite 内存数据库
+21. 实现测试步骤函数（test_applications.py, test_groups.py, test_pricing.py, test_cancellations.py, test_payments.py）
+
+## 第四阶段：Bug 修复与测试完善
+
+22. 修复 services/application.py - data.departure_date → group.departure_date
+23. 修复 services/pricing.py - calc_balance_deadline 逻辑修正
+24. 修复 services/pricing.py - 取消手续费 10 天边界条件（<= 10）
+25. 修复 services/application.py - pay_balance 先检查 cancelled 再检查 info_completed
+26. 修复 routers/applications.py - /search 路由移到 /{id} 之前
+27. 137 个场景全部通过
+
+## 第五阶段：API 契约规范
+
+28. 编写 docs/spec/openapi.yaml - 18 个端点的 OpenAPI 3.0.3 规范
+29. 编写 doc/05_API_CONTRACT.MD - API 契约设计文档
+30. 安装 openapi-core 并添加契约校验夹具到 conftest.py
+
+## 第六阶段：活文档与持续集成
+
+31. 安装 allure-pytest 并配置 Allure 报告生成
+32. 运行全量测试生成 Allure 报告（137 passed）
+33. 创建 .github/workflows/spec-test.yml CI 流水线
+34. 更新 requirements-dev.txt 添加 allure-pytest, openapi-core, pyyaml
+35. Allure 报告部署到 docs/reports/latest/
+36. 编写 doc/06_LIVING_DOCUMENTATION.MD 活文档说明
 
