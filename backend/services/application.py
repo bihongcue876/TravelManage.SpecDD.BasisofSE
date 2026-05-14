@@ -27,7 +27,7 @@ def create_application(db: Session, data: ApplicationCreate) -> Application:
 
     adult_price = group.adult_price or Decimal("0")
     child_price = group.child_price or Decimal("0")
-    deposit, _ = calc_deposit(data.departure_date, data.adults, data.children, adult_price, child_price)
+    deposit, _ = calc_deposit(group.departure_date, data.adults, data.children, adult_price, child_price)
     total_price = data.adults * adult_price + data.children * child_price
 
     application = Application(

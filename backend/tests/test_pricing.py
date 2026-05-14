@@ -1,5 +1,7 @@
 from pytest_bdd import scenario, given, when, then, parsers
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal, ROUND_HALF_UP
+from services.pricing import calc_deposit, calc_cancel_fee, calc_balance_deadline
 
 FEATURE_FILE = "../../features/pricing.feature"
 
@@ -120,80 +122,142 @@ def test_cancel_fee_decimal_precision():
 
 
 @given(parsers.cfparse('出发日期为 "{departure_date}"'))
-def set_departure_date(departure_date, db):
-    raise NotImplementedError
+def set_departure_date(departure_date, context):
+    context['departure'] = datetime.strptime(departure_date, "%Y-%m-%d").date()
 
 
 @given(parsers.cfparse('今天是 "{today}"'))
-def set_current_date(today, db):
-    raise NotImplementedError
+def set_current_date(today, context):
+    context['today'] = datetime.strptime(today, "%Y-%m-%d").date()
 
 
-@given(parsers.cfparse('大人价格为 {adult_price:d} 元，小孩价格为 {child_price:d} 元'))
-def set_prices(adult_price, child_price, db):
-    raise NotImplementedError
+@given(parsers.cfparse('大人价格为 {adult_price:g} 元，小孩价格为 {child_price:g} 元'))
+def set_prices(adult_price, child_price, context):
+    context['adult_price'] = Decimal(str(adult_price))
+    context['child_price'] = Decimal(str(child_price))
 
 
-@given(parsers.cfparse('已支付总额为 {paid_total:d} 元'))
-def set_paid_total(paid_total, db):
-    raise NotImplementedError
+@given(parsers.cfparse('已支付总额为 {paid_total:g} 元'))
+def set_paid_total(paid_total, context):
+    context['paid_total'] = Decimal(str(paid_total))
 
 
 @when(parsers.cfparse('系统计算订金，大人 {adults:d} 名，小孩 {children:d} 名'))
-def calculate_deposit(adults, children, db):
-    raise NotImplementedError
+def calculate_deposit(adults, children, context):
+    adult_price = context.get('adult_price', Decimal('0'))
+    child_price = context.get('child_price', Decimal('0'))
+    departure = context['departure']
+    today = context.get('today', date.today())
+    original_today = date.today.__func__ if hasattr(date.today, '__func__') else None
+
+    class _FakeDate(date):
+        @classmethod
+        def today(cls):
+            return today
+
+    import builtins
+    import services.pricing as pricing_mod
+    original_today_method = date.today
+    date.today = _FakeDate
+
+    try:
+        deposit, rate_str = calc_deposit(departure, adults, children, adult_price, child_price)
+        total = adults * adult_price + children * child_price
+        context['deposit'] = deposit
+        context['rate_str'] = rate_str
+        context['total'] = total
+    finally:
+        date.today = original_today_method
 
 
 @when('系统计算取消手续费')
-def calculate_cancel_fee(db):
-    raise NotImplementedError
+def calculate_cancel_fee(context):
+    departure = context['departure']
+    today = context.get('today', date.today())
+    paid_total = context.get('paid_total', Decimal('0'))
+
+    class _FakeDate(date):
+        @classmethod
+        def today(cls):
+            return today
+
+    original_today_method = date.today
+    date.today = _FakeDate
+
+    try:
+        cancel_fee, refund_amount = calc_cancel_fee(departure, paid_total)
+        context['cancel_fee'] = cancel_fee
+        context['refund_amount'] = refund_amount
+    finally:
+        date.today = original_today_method
 
 
 @when('系统计算尾款截止日期')
-def calculate_balance_deadline(db):
-    raise NotImplementedError
+def calculate_balance_deadline(context):
+    departure = context['departure']
+    today = context.get('today', date.today())
+
+    balance_deadline, base_deadline, fallback_deadline = calc_balance_deadline(departure, today)
+    context['balance_deadline'] = balance_deadline
+    context['base_deadline'] = base_deadline
+    context['fallback_deadline'] = fallback_deadline
 
 
-@then(parsers.cfparse('订金为 {deposit:d} 元'))
-def deposit_amount_is(deposit, db):
-    raise NotImplementedError
+@then(parsers.cfparse('订金为 {deposit:g} 元'))
+def deposit_amount_is(deposit, context):
+    expected = Decimal(str(deposit))
+    actual = context.get('deposit', Decimal('0'))
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
 @then(parsers.cfparse('订金比例为 "{rate}"'))
-def deposit_rate_is(rate, db):
-    raise NotImplementedError
+def deposit_rate_is(rate, context):
+    assert context.get('rate_str') == rate
 
 
-@then(parsers.cfparse('总价为 {total:d} 元'))
-def total_price_is(total, db):
-    raise NotImplementedError
+@then(parsers.cfparse('总价为 {total:g} 元'))
+def total_price_is(total, context):
+    expected = Decimal(str(total))
+    actual = context.get('total', Decimal('0'))
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
-@then(parsers.cfparse('取消手续费为 {cancel_fee:d} 元'))
-def cancel_fee_amount_is(cancel_fee, db):
-    raise NotImplementedError
+@then(parsers.cfparse('取消手续费为 {cancel_fee:g} 元'))
+def cancel_fee_amount_is(cancel_fee, context):
+    expected = Decimal(str(cancel_fee))
+    actual = context.get('cancel_fee', Decimal('0'))
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
-@then(parsers.cfparse('退款金额为 {refund_amount:d} 元'))
-def refund_amount_is(refund_amount, db):
-    raise NotImplementedError
+@then(parsers.cfparse('退款金额为 {refund_amount:g} 元'))
+def refund_amount_is(refund_amount, context):
+    expected = Decimal(str(refund_amount))
+    actual = context.get('refund_amount', Decimal('0'))
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
 @then(parsers.cfparse('尾款截止日期为 "{deadline}"'))
-def balance_deadline_is(deadline, db):
-    raise NotImplementedError
+def balance_deadline_is(deadline, context):
+    expected = datetime.strptime(deadline, "%Y-%m-%d").date()
+    actual = context.get('balance_deadline')
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
 @then(parsers.cfparse('基础截止日期为 "{base_deadline}"'))
-def base_deadline_is(base_deadline, db):
-    raise NotImplementedError
+def base_deadline_is(base_deadline, context):
+    expected = datetime.strptime(base_deadline, "%Y-%m-%d").date()
+    actual = context.get('base_deadline')
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
 @then(parsers.cfparse('备用截止日期为 "{fallback_deadline}"'))
-def fallback_deadline_is(fallback_deadline, db):
-    raise NotImplementedError
+def fallback_deadline_is(fallback_deadline, context):
+    expected = datetime.strptime(fallback_deadline, "%Y-%m-%d").date()
+    actual = context.get('fallback_deadline')
+    assert actual == expected, f"Expected {expected}, got {actual}"
 
 
 @then('订金比例保留两位小数')
-def deposit_rate_decimal_places(db):
-    raise NotImplementedError
+def deposit_rate_decimal_places(context):
+    deposit = context.get('deposit', Decimal('0'))
+    assert deposit == deposit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
