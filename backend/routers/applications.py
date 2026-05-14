@@ -25,17 +25,6 @@ def create_application(data: ApplicationCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{application_id}", response_model=ApplicationDetailResponse)
-def get_application(application_id: int, db: Session = Depends(get_db)):
-    application = db.query(Application).options(
-        joinedload(Application.participants),
-        joinedload(Application.group)
-    ).filter(Application.id == application_id).first()
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return application
-
-
 @router.get("/search", response_model=List[ApplicationResponse])
 def search_applications(
     code: Optional[str] = Query(None),
@@ -57,6 +46,17 @@ def search_applications(
 
     applications = query.all()
     return applications
+
+
+@router.get("/{application_id}", response_model=ApplicationDetailResponse)
+def get_application(application_id: int, db: Session = Depends(get_db)):
+    application = db.query(Application).options(
+        joinedload(Application.participants),
+        joinedload(Application.group)
+    ).filter(Application.id == application_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
 
 
 @router.post("/{application_id}/pay-deposit", response_model=ApplicationResponse)

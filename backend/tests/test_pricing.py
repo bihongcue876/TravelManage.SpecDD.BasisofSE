@@ -126,11 +126,6 @@ def set_departure_date(departure_date, context):
     context['departure'] = datetime.strptime(departure_date, "%Y-%m-%d").date()
 
 
-@given(parsers.cfparse('今天是 "{today}"'))
-def set_current_date(today, context):
-    context['today'] = datetime.strptime(today, "%Y-%m-%d").date()
-
-
 @given(parsers.cfparse('大人价格为 {adult_price:g} 元，小孩价格为 {child_price:g} 元'))
 def set_prices(adult_price, child_price, context):
     context['adult_price'] = Decimal(str(adult_price))
@@ -144,52 +139,31 @@ def set_paid_total(paid_total, context):
 
 @when(parsers.cfparse('系统计算订金，大人 {adults:d} 名，小孩 {children:d} 名'))
 def calculate_deposit(adults, children, context):
+    from freezegun import freeze_time
     adult_price = context.get('adult_price', Decimal('0'))
     child_price = context.get('child_price', Decimal('0'))
     departure = context['departure']
     today = context.get('today', date.today())
-    original_today = date.today.__func__ if hasattr(date.today, '__func__') else None
 
-    class _FakeDate(date):
-        @classmethod
-        def today(cls):
-            return today
-
-    import builtins
-    import services.pricing as pricing_mod
-    original_today_method = date.today
-    date.today = _FakeDate
-
-    try:
+    with freeze_time(today.isoformat()):
         deposit, rate_str = calc_deposit(departure, adults, children, adult_price, child_price)
         total = adults * adult_price + children * child_price
         context['deposit'] = deposit
         context['rate_str'] = rate_str
         context['total'] = total
-    finally:
-        date.today = original_today_method
 
 
 @when('系统计算取消手续费')
 def calculate_cancel_fee(context):
+    from freezegun import freeze_time
     departure = context['departure']
     today = context.get('today', date.today())
     paid_total = context.get('paid_total', Decimal('0'))
 
-    class _FakeDate(date):
-        @classmethod
-        def today(cls):
-            return today
-
-    original_today_method = date.today
-    date.today = _FakeDate
-
-    try:
+    with freeze_time(today.isoformat()):
         cancel_fee, refund_amount = calc_cancel_fee(departure, paid_total)
         context['cancel_fee'] = cancel_fee
         context['refund_amount'] = refund_amount
-    finally:
-        date.today = original_today_method
 
 
 @when('系统计算尾款截止日期')

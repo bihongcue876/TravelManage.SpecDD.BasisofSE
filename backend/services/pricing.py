@@ -31,9 +31,9 @@ def calc_cancel_fee(departure: date, paid_total: Decimal) -> tuple[Decimal, Deci
 
     if days >= 30:
         rate = Decimal("0")
-    elif 10 <= days < 30:
+    elif 10 < days < 30:
         rate = Decimal("0.2")
-    elif 1 <= days < 10:
+    elif 1 <= days <= 10:
         rate = Decimal("0.5")
     else:
         rate = Decimal("1.0")
@@ -46,5 +46,9 @@ def calc_cancel_fee(departure: date, paid_total: Decimal) -> tuple[Decimal, Deci
 def calc_balance_deadline(departure: date, today: date) -> tuple[date, date, date]:
     base_deadline = departure - timedelta(days=30)
     fallback_deadline = today + timedelta(days=10)
-    balance_deadline = max(base_deadline, fallback_deadline)
+    days_to_deadline = (base_deadline - today).days
+    if days_to_deadline < 10:
+        balance_deadline = fallback_deadline
+    else:
+        balance_deadline = base_deadline
     return balance_deadline, base_deadline, fallback_deadline

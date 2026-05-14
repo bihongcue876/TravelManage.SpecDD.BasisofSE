@@ -119,6 +119,8 @@ def pay_balance(db: Session, app_id: int, amount: Decimal) -> Application:
     application = db.query(Application).filter(Application.id == app_id).first()
     if not application:
         raise ValueError("Application not found")
+    if application.state == AppState.CANCELLED:
+        raise ValueError("Application is cancelled")
     if not application.info_completed:
         raise ValueError("Participant information is not completed")
     if application.state == AppState.CANCELLED:
