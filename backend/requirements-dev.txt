@@ -1,0 +1,10 @@
+pytest>=7.4.0
+pytest-bdd>=7.0.0
+pytest-asyncio>=0.21.0
+httpx>=0.24.0
+aiosqlite>=0.19.0
+allure-pytest>=2.16.0
+freezegun>=1.5.0
+openapi-core>=0.23.0
+openapi-spec-validator>=0.8.0
+pyyaml>=6.0
