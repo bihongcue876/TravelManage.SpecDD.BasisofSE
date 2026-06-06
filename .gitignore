@@ -31,3 +31,7 @@ htmlcov/
 backend/allure-results/
 backend/allure-report/
 docs/reports/
+
+
+.qwen/
+codes.md
