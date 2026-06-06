@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Space, Modal, Form, Input, message } from 'antd'
-import { PlusOutlined, EditOutlined } from '@ant-design/icons'
+import { Table, Button, Space, Modal, Form, Input, message, Upload } from 'antd'
+import { PlusOutlined, EditOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { fetchRoutes, createRoute, updateRoute } from '../api'
+import { fetchRoutes, createRoute, updateRoute, importRoutesExcel, downloadRouteTemplate } from '../api'
 import type { Route } from '../types'
 import './AdminRoutes.css'
 
@@ -58,6 +58,31 @@ function AdminRoutes() {
     }
   }
 
+  const handleImport = async (file: File) => {
+    try {
+      const result = await importRoutesExcel(file)
+      message.success(`导入成功，共 ${result.imported} 条路线`)
+      loadRoutes()
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+    return false
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadRouteTemplate()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'route_template.xlsx'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
   const columns: ColumnsType<Route> = [
     { title: 'ID', dataIndex: 'id' },
     { title: '路线名称', dataIndex: 'name' },
@@ -83,9 +108,21 @@ function AdminRoutes() {
     <div>
       <div className="page-header">
         <h2>路线管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增路线
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
+            下载模板
+          </Button>
+          <Upload
+            beforeUpload={handleImport}
+            showUploadList={false}
+            accept=".xlsx,.xls"
+          >
+            <Button icon={<UploadOutlined />}>批量导入</Button>
+          </Upload>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            新增路线
+          </Button>
+        </Space>
       </div>
 
       <Table

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
-from models import AppState
+from models import AppState, PaymentMethod, RefundChannel, RefundStatus, ReminderType
 
 
 class RouteBase(BaseModel):
@@ -179,6 +179,8 @@ class DailyReminderResponse(BaseModel):
 
 class PaymentRequest(BaseModel):
     amount: Decimal = Field(..., gt=0)
+    payment_method: Optional[str] = None
+    voucher_paths: Optional[List[str]] = None
 
 
 class ParticipantsBulkRequest(BaseModel):
@@ -190,3 +192,162 @@ class ApplicationSearchParams(BaseModel):
     departure_from: Optional[date] = None
     departure_to: Optional[date] = None
     name: Optional[str] = None
+
+
+class DepositPreviewResponse(BaseModel):
+    deposit: Decimal
+    total_price: Decimal
+    deposit_rate: str
+    balance_deadline: date
+    remaining_balance: Decimal
+
+
+class PaymentVoucherResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    payment_log_id: int
+    file_name: str
+    file_path: str
+    file_size: Optional[int]
+    created_at: datetime
+
+
+class PaymentLogDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    application_id: int
+    type: str
+    amount: Decimal
+    payment_method: Optional[str]
+    voucher_path: Optional[str]
+    created_at: datetime
+    vouchers: List[PaymentVoucherResponse] = []
+
+
+class RemainingBalanceResponse(BaseModel):
+    total_price: Decimal
+    paid_deposit: Decimal
+    paid_balance: Decimal
+    remaining: Decimal
+    balance_deadline: date
+    days_until_deadline: int
+
+
+class ParticipantEditHistoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    participant_id: int
+    field_name: str
+    old_value: Optional[str]
+    new_value: Optional[str]
+    edited_by: str
+    created_at: datetime
+
+
+class DuplicateParticipantWarning(BaseModel):
+    field: str
+    value: str
+    existing_participant_id: int
+    existing_application_id: int
+    message: str
+
+
+class RefundDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    application_id: int
+    participant_id: Optional[int]
+    cancel_fee: Decimal
+    refund_amount: Decimal
+    reason: Optional[str]
+    channel: Optional[str]
+    status: str
+    approved_by: Optional[str]
+    approved_at: Optional[datetime]
+    refunded_at: datetime
+
+
+class PartialCancelRequest(BaseModel):
+    participant_ids: List[int]
+    reason: Optional[str] = None
+    channel: Optional[str] = None
+
+
+class RefundApprovalRequest(BaseModel):
+    approved: bool
+    approved_by: str
+
+
+class CancelPreviewDetailResponse(BaseModel):
+    total_paid: Decimal
+    cancel_fee: Decimal
+    refund_amount: Decimal
+    is_partial: bool = False
+    participant_count: int = 0
+    per_participant_refund: Optional[Decimal] = None
+
+
+class ReminderLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    application_id: int
+    reminder_type: str
+    content: Optional[str]
+    sent_at: datetime
+    success: bool
+
+
+class PaymentOrderResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    application_id: int
+    order_no: str
+    order_type: str
+    created_at: datetime
+
+
+class BatchPrintRequest(BaseModel):
+    application_ids: List[int]
+    doc_type: str = Field(..., pattern="^(confirmation|payment_order)$")
+
+
+class BatchPrintResponse(BaseModel):
+    documents: List[dict]
+    total_count: int
+
+
+class FinanceExportRequest(BaseModel):
+    target_date: Optional[date] = None
+    format: str = Field("csv", pattern="^(csv|excel|json)$")
+    fields: Optional[List[str]] = None
+
+
+class FinanceReportResponse(BaseModel):
+    period: str
+    total_deposits: Decimal
+    total_balances: Decimal
+    total_refunds: Decimal
+    net_income: Decimal
+    record_count: int
+
+
+class BankReconciliationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    import_date: date
+    file_name: str
+    total_records: int
+    matched_count: int
+    unmatched_count: int
+    created_at: datetime
+
+
+class BankReconciliationItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    reconciliation_id: int
+    bank_date: Optional[date]
+    bank_amount: Decimal
+    bank_ref: Optional[str]
+    matched_payment_id: Optional[int]
+    is_matched: bool

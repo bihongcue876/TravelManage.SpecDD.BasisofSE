@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -13,6 +13,57 @@ router = APIRouter(prefix="/api/routes", tags=["routes"])
 def list_routes(db: Session = Depends(get_db)):
     routes = db.query(Route).all()
     return routes
+
+
+@router.get("/template")
+def download_route_template():
+    import openpyxl
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "路线导入模板"
+    headers = ["路线名称", "描述", "是否启用(True/False)"]
+    ws.append(headers)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=route_template.xlsx"}
+    )
+
+
+@router.post("/import")
+def import_routes_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    import openpyxl
+    from io import BytesIO
+
+    content = file.file.read()
+    wb = openpyxl.load_workbook(BytesIO(content))
+    ws = wb.active
+
+    imported = 0
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if not row[0]:
+            continue
+        route = Route(
+            name=str(row[0]),
+            descr=str(row[1]) if row[1] else None,
+            is_active=bool(row[2]) if row[2] is not None else True,
+        )
+        db.add(route)
+        imported += 1
+
+    db.commit()
+    return {"imported": imported}
 
 
 @router.get("/{route_id}", response_model=RouteResponse)

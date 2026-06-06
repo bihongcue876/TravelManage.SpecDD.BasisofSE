@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Form, Input, InputNumber, Button, Card, message, Alert, Space } from 'antd'
-import { fetchGroup, fetchPricingPreview, createApplication } from '../api'
-import type { GroupDetail, PricingPreview } from '../types'
+import { Form, Input, InputNumber, Button, Card, message, Alert, Space, Descriptions } from 'antd'
+import { fetchGroup, fetchPricingPreview, fetchBalanceDeadline, createApplication } from '../api'
+import type { GroupDetail, PricingPreview, BalanceDeadline } from '../types'
 import './ApplyCreate.css'
 
 function ApplyCreate() {
@@ -10,6 +10,7 @@ function ApplyCreate() {
   const navigate = useNavigate()
   const [group, setGroup] = useState<GroupDetail | null>(null)
   const [pricing, setPricing] = useState<PricingPreview | null>(null)
+  const [balanceDeadline, setBalanceDeadline] = useState<BalanceDeadline | null>(null)
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
 
@@ -33,8 +34,12 @@ function ApplyCreate() {
       const children = values.children || 0
       if (groupId) {
         try {
-          const preview = await fetchPricingPreview(parseInt(groupId), { adults, children })
+          const [preview, deadline] = await Promise.all([
+            fetchPricingPreview(parseInt(groupId), { adults, children }),
+            fetchBalanceDeadline(parseInt(groupId)),
+          ])
           setPricing(preview)
+          setBalanceDeadline(deadline)
         } catch {
           // ignore
         }
@@ -127,13 +132,17 @@ function ApplyCreate() {
 
           {pricing && (
             <Alert
-              message="费用预览"
+              message="订金支付预览"
               description={
-                <div>
-                  <p><strong>总费用：</strong>¥{pricing.total_price}</p>
-                  <p><strong>订金比例：</strong>{pricing.deposit_rate}</p>
-                  <p><strong>应付订金：</strong>¥{pricing.deposit}</p>
-                </div>
+                <Descriptions column={1} size="small">
+                  <Descriptions.Item label="总费用">¥{pricing.total_price}</Descriptions.Item>
+                  <Descriptions.Item label="订金比例">{pricing.deposit_rate}</Descriptions.Item>
+                  <Descriptions.Item label="应付订金">¥{pricing.deposit}</Descriptions.Item>
+                  <Descriptions.Item label="剩余尾款">¥{pricing.total_price - pricing.deposit}</Descriptions.Item>
+                  {balanceDeadline && (
+                    <Descriptions.Item label="尾款支付截止日">{balanceDeadline.balance_deadline}</Descriptions.Item>
+                  )}
+                </Descriptions>
               }
               type="info"
               style={{ marginBottom: 16 }}

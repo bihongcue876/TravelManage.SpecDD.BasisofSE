@@ -78,13 +78,31 @@ export interface PaymentLog {
   application_id: number
   type: 'deposit' | 'balance'
   amount: number
+  payment_method: string | null
+  voucher_path: string | null
   created_at: string
+}
+
+export interface PaymentVoucher {
+  id: number
+  payment_log_id: number
+  file_name: string
+  file_path: string
+  file_size: number | null
+  created_at: string
+}
+
+export interface PaymentLogDetail extends PaymentLog {
+  vouchers: PaymentVoucher[]
 }
 
 export interface CancelPreview {
   total_paid: number
   cancel_fee: number
   refund_amount: number
+  is_partial: boolean
+  participant_count: number
+  per_participant_refund: number | null
 }
 
 export interface PricingPreview {
@@ -93,10 +111,27 @@ export interface PricingPreview {
   deposit_rate: string
 }
 
+export interface DepositPreview {
+  deposit: number
+  total_price: number
+  deposit_rate: string
+  balance_deadline: string
+  remaining_balance: number
+}
+
 export interface BalanceDeadline {
   balance_deadline: string
   base_deadline: string
   fallback_deadline: string
+}
+
+export interface RemainingBalance {
+  total_price: number
+  paid_deposit: number
+  paid_balance: number
+  remaining: number
+  balance_deadline: string
+  days_until_deadline: number
 }
 
 export interface DailyReminderItem {
@@ -122,4 +157,82 @@ export interface Availability {
   max_pax: number
   occupied: number
   available: number
+}
+
+export interface ParticipantEditHistory {
+  id: number
+  participant_id: number
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  edited_by: string
+  created_at: string
+}
+
+export interface DuplicateParticipantWarning {
+  field: string
+  value: string
+  existing_participant_id: number
+  existing_application_id: number
+  message: string
+}
+
+export interface RefundDetail {
+  id: number
+  application_id: number
+  participant_id: number | null
+  cancel_fee: number
+  refund_amount: number
+  reason: string | null
+  channel: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'completed'
+  approved_by: string | null
+  approved_at: string | null
+  refunded_at: string
+}
+
+export interface ReminderLog {
+  id: number
+  application_id: number
+  reminder_type: 'email' | 'sms' | 'print'
+  content: string | null
+  sent_at: string
+  success: boolean
+}
+
+export interface PaymentOrder {
+  id: number
+  application_id: number
+  order_no: string
+  order_type: string
+  created_at: string
+}
+
+export interface FinanceReport {
+  period: string
+  total_deposits: number
+  total_balances: number
+  total_refunds: number
+  net_income: number
+  record_count: number
+}
+
+export interface BankReconciliation {
+  id: number
+  import_date: string
+  file_name: string
+  total_records: number
+  matched_count: number
+  unmatched_count: number
+  created_at: string
+}
+
+export interface BankReconciliationItem {
+  id: number
+  reconciliation_id: number
+  bank_date: string | null
+  bank_amount: number
+  bank_ref: string | null
+  matched_payment_id: number | null
+  is_matched: boolean
 }

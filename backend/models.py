@@ -18,6 +18,32 @@ class AppState(str, enum.Enum):
     CANCELLED = "cancelled"
 
 
+class PaymentMethod(str, enum.Enum):
+    CASH = "cash"
+    BANK_TRANSFER = "bank_transfer"
+    WECHAT = "wechat"
+    ALIPAY = "alipay"
+
+
+class RefundChannel(str, enum.Enum):
+    ORIGINAL = "original"
+    CASH = "cash"
+    BANK_TRANSFER = "bank_transfer"
+
+
+class RefundStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    COMPLETED = "completed"
+
+
+class ReminderType(str, enum.Enum):
+    EMAIL = "email"
+    SMS = "sms"
+    PRINT = "print"
+
+
 class Route(Base):
     __tablename__ = "routes"
 
@@ -83,6 +109,8 @@ class Application(Base):
     participants: Mapped[List["Participant"]] = relationship("Participant", back_populates="application", cascade="all, delete-orphan")
     payment_logs: Mapped[List["PaymentLog"]] = relationship("PaymentLog", back_populates="application")
     refunds: Mapped[List["Refund"]] = relationship("Refund", back_populates="application")
+    reminder_logs: Mapped[List["ReminderLog"]] = relationship("ReminderLog", back_populates="application")
+    payment_orders: Mapped[List["PaymentOrder"]] = relationship("PaymentOrder", back_populates="application")
 
 
 class Participant(Base):
@@ -105,19 +133,8 @@ class Participant(Base):
     )
 
     application: Mapped["Application"] = relationship("Application", back_populates="participants")
+    edit_history: Mapped[List["ParticipantEditHistory"]] = relationship("ParticipantEditHistory", back_populates="participant", cascade="all, delete-orphan")
 
-
-class Refund(Base):
-    __tablename__ = "refunds"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    application_id: Mapped[int] = mapped_column(Integer, ForeignKey("applications.id"), nullable=False)
-    cancel_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    refund_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    refunded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
-
-    application: Mapped["Application"] = relationship("Application", back_populates="refunds")
 
 
 class PaymentLog(Base):
@@ -127,6 +144,8 @@ class PaymentLog(Base):
     application_id: Mapped[int] = mapped_column(Integer, ForeignKey("applications.id"), nullable=False)
     type: Mapped[str] = mapped_column(String(10), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    payment_method: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    voucher_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     __table_args__ = (
@@ -134,6 +153,77 @@ class PaymentLog(Base):
     )
 
     application: Mapped["Application"] = relationship("Application", back_populates="payment_logs")
+    vouchers: Mapped[List["PaymentVoucher"]] = relationship("PaymentVoucher", back_populates="payment_log", cascade="all, delete-orphan")
+
+
+class PaymentVoucher(Base):
+    __tablename__ = "payment_vouchers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    payment_log_id: Mapped[int] = mapped_column(Integer, ForeignKey("payment_logs.id"), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    payment_log: Mapped["PaymentLog"] = relationship("PaymentLog", back_populates="vouchers")
+
+
+class ParticipantEditHistory(Base):
+    __tablename__ = "participant_edit_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    participant_id: Mapped[int] = mapped_column(Integer, ForeignKey("participants.id"), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    edited_by: Mapped[str] = mapped_column(String(100), nullable=False, default="admin")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    participant: Mapped["Participant"] = relationship("Participant", back_populates="edit_history")
+
+
+class Refund(Base):
+    __tablename__ = "refunds"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    application_id: Mapped[int] = mapped_column(Integer, ForeignKey("applications.id"), nullable=False)
+    participant_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("participants.id"), nullable=True)
+    cancel_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    refund_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    channel: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=RefundStatus.PENDING)
+    approved_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    refunded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    application: Mapped["Application"] = relationship("Application", back_populates="refunds")
+
+
+class ReminderLog(Base):
+    __tablename__ = "reminder_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    application_id: Mapped[int] = mapped_column(Integer, ForeignKey("applications.id"), nullable=False)
+    reminder_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sent_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    application: Mapped["Application"] = relationship("Application", back_populates="reminder_logs")
+
+
+class PaymentOrder(Base):
+    __tablename__ = "payment_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    application_id: Mapped[int] = mapped_column(Integer, ForeignKey("applications.id"), nullable=False)
+    order_no: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    order_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    application: Mapped["Application"] = relationship("Application", back_populates="payment_orders")
 
 
 class FinancialExport(Base):
@@ -142,5 +232,31 @@ class FinancialExport(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     export_date: Mapped[date] = mapped_column(Date, nullable=False)
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    file_format: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, default="csv")
     record_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+
+class BankReconciliation(Base):
+    __tablename__ = "bank_reconciliations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    import_date: Mapped[date] = mapped_column(Date, nullable=False)
+    file_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    total_records: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    matched_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    unmatched_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+
+class BankReconciliationItem(Base):
+    __tablename__ = "bank_reconciliation_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    reconciliation_id: Mapped[int] = mapped_column(Integer, ForeignKey("bank_reconciliations.id"), nullable=False)
+    bank_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    bank_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    bank_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    matched_payment_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("payment_logs.id"), nullable=True)
+    is_matched: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())

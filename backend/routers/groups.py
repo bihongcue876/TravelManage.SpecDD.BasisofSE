@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
@@ -36,6 +36,81 @@ def list_groups(
 
     groups = query.order_by(Group.departure_date).all()
     return groups
+
+
+@router.get("/template")
+def download_group_template():
+    import openpyxl
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "旅游团导入模板"
+    headers = ["路线ID", "团代码", "出发日期(YYYY-MM-DD)", "截止日期(YYYY-MM-DD)", "最大人数", "成人价", "儿童价", "是否发布(True/False)"]
+    ws.append(headers)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=group_template.xlsx"}
+    )
+
+
+@router.post("/import")
+def import_groups_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    import openpyxl
+    from io import BytesIO
+    from datetime import datetime as dt
+
+    content = file.file.read()
+    wb = openpyxl.load_workbook(BytesIO(content))
+    ws = wb.active
+
+    imported = 0
+    errors = []
+    for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if not row[0] or not row[1]:
+            continue
+        try:
+            route_id = int(row[0])
+            route = db.query(Route).filter(Route.id == route_id).first()
+            if not route:
+                errors.append(f"行{idx}: 路线ID {route_id} 不存在")
+                continue
+
+            code = str(row[1])
+            departure_date = row[2] if isinstance(row[2], date) else dt.strptime(str(row[2]), "%Y-%m-%d").date()
+            deadline = row[3] if isinstance(row[3], date) else dt.strptime(str(row[3]), "%Y-%m-%d").date()
+
+            if deadline >= departure_date:
+                errors.append(f"行{idx}: 截止日期必须在出发日期之前")
+                continue
+
+            group = Group(
+                route_id=route_id,
+                code=code,
+                departure_date=departure_date,
+                deadline=deadline,
+                max_pax=int(row[4]) if row[4] else 20,
+                adult_price=row[5] if row[5] else None,
+                child_price=row[6] if row[6] else None,
+                is_published=bool(row[7]) if row[7] is not None else False,
+            )
+            db.add(group)
+            imported += 1
+        except Exception as e:
+            errors.append(f"行{idx}: {str(e)}")
+
+    db.commit()
+    return {"imported": imported, "errors": errors}
 
 
 @router.get("/{group_id}", response_model=GroupDetailResponse)

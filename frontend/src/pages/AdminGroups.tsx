@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Space, Modal, Form, Input, InputNumber, DatePicker, message } from 'antd'
-import { PlusOutlined, EditOutlined, CheckOutlined } from '@ant-design/icons'
+import { Table, Button, Space, Modal, Form, Input, InputNumber, DatePicker, message, Upload, Select } from 'antd'
+import { PlusOutlined, EditOutlined, CheckOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { fetchGroups, createGroup, updateGroup, publishGroup, fetchRoutes } from '../api'
+import { fetchGroups, createGroup, updateGroup, publishGroup, fetchRoutes, importGroupsExcel, downloadGroupTemplate } from '../api'
 import type { Group, Route } from '../types'
 import './AdminGroups.css'
 
@@ -90,6 +90,35 @@ function AdminGroups() {
     }
   }
 
+  const handleImport = async (file: File) => {
+    try {
+      const result = await importGroupsExcel(file)
+      if (result.errors && result.errors.length > 0) {
+        message.warning(`导入 ${result.imported} 条，错误：${result.errors.join('; ')}`)
+      } else {
+        message.success(`导入成功，共 ${result.imported} 条旅游团`)
+      }
+      loadGroups()
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+    return false
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadGroupTemplate()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'group_template.xlsx'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
   const columns: ColumnsType<Group> = [
     { title: '团代码', dataIndex: 'code' },
     { title: '路线', dataIndex: 'route_id', render: (id: number) => routes.find((r: Route) => r.id === id)?.name || id },
@@ -123,9 +152,21 @@ function AdminGroups() {
     <div>
       <div className="page-header">
         <h2>旅游团管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增团
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
+            下载模板
+          </Button>
+          <Upload
+            beforeUpload={handleImport}
+            showUploadList={false}
+            accept=".xlsx,.xls"
+          >
+            <Button icon={<UploadOutlined />}>批量导入</Button>
+          </Upload>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            新增团
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -148,7 +189,10 @@ function AdminGroups() {
             label="路线"
             rules={[{ required: true, message: '请选择路线' }]}
           >
-            <Input type="number" />
+            <Select
+              options={routes.map(r => ({ label: r.name, value: r.id }))}
+              placeholder="请选择路线"
+            />
           </Form.Item>
           <Form.Item
             name="code"
@@ -176,13 +220,13 @@ function AdminGroups() {
             label="名额"
             rules={[{ required: true, message: '请输入名额' }]}
           >
-            <InputNumber min={1} />
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="adult_price" label="成人价">
-            <InputNumber min={0} precision={2} prefix="¥" />
+            <InputNumber min={0} precision={2} prefix="¥" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="child_price" label="儿童价">
-            <InputNumber min={0} precision={2} prefix="¥" />
+            <InputNumber min={0} precision={2} prefix="¥" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,10 +1,25 @@
 import { useState } from 'react'
-import { Card, Table, DatePicker, Button, Space, Tabs, message, Tag } from 'antd'
-import { DownloadOutlined, FileTextOutlined, DollarOutlined } from '@ant-design/icons'
+import {
+  Card, Table, DatePicker, Button, Space, Tabs, message, Tag, Select,
+  Modal, Form, Upload, Checkbox, Row, Col, Statistic
+} from 'antd'
+import {
+  DownloadOutlined, FileTextOutlined, DollarOutlined,
+  MailOutlined, MessageOutlined, PrinterOutlined,
+  UploadOutlined, BankOutlined
+} from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { fetchDailyReminders, fetchDailyFinance, exportDailyFinance } from '../api'
-import type { DailyReminderItem } from '../types'
+import {
+  fetchDailyReminders, fetchDailyFinance, exportDailyFinance,
+  fetchFinanceReport, batchPrintDocuments, sendReminder,
+  fetchTaskReminderLogs, importBankReconciliation,
+  fetchBankReconciliation, fetchBankReconciliationItems
+} from '../api'
+import type {
+  DailyReminderItem, FinanceReport, ReminderLog,
+  BankReconciliation, BankReconciliationItem
+} from '../types'
 import './DailyTasks.css'
 
 function DailyTasks() {
@@ -12,6 +27,15 @@ function DailyTasks() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(dayjs().format('YYYY-MM-DD'))
   const [reminders, setReminders] = useState<DailyReminderItem[]>([])
   const [financeData, setFinanceData] = useState<Record<string, unknown>[]>([])
+  const [selectedAppIds, setSelectedAppIds] = useState<number[]>([])
+  const [financeReport, setFinanceReport] = useState<FinanceReport | null>(null)
+  const [reminderLogs, setReminderLogs] = useState<ReminderLog[]>([])
+  const [bankReconciliations, setBankReconciliations] = useState<BankReconciliation[]>([])
+  const [reconItems, setReconItems] = useState<BankReconciliationItem[]>([])
+  const [reconDetailVisible, setReconDetailVisible] = useState(false)
+  const [exportModalVisible, setExportModalVisible] = useState(false)
+  const [reportModalVisible, setReportModalVisible] = useState(false)
+  const [form] = Form.useForm()
 
   const loadReminders = async (date: string) => {
     setLoading(true)
@@ -40,11 +64,76 @@ function DailyTasks() {
   const handleExport = async () => {
     if (!selectedDate) return
     try {
-      const result = await exportDailyFinance({ target_date: selectedDate })
-      message.success(`导出成功，共 ${result.record_count} 条记录`)
+      const values = form.getFieldsValue()
+      const result = await exportDailyFinance({
+        target_date: selectedDate,
+        format: values.format || 'csv',
+        fields: values.fields,
+      })
+      message.success(`导出成功（${values.format || 'csv'}），共 ${result.record_count} 条记录`)
+      setExportModalVisible(false)
     } catch (error) {
       message.error((error as Error).message)
     }
+  }
+
+  const handleFinanceReport = async () => {
+    const values = form.getFieldsValue()
+    try {
+      const report = await fetchFinanceReport({
+        period: values.period || 'daily',
+        start_date: values.start_date?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'),
+        end_date: values.end_date?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'),
+      })
+      setFinanceReport(report)
+      setReportModalVisible(true)
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
+  const handleBatchPrint = async (docType: string) => {
+    if (selectedAppIds.length === 0) {
+      message.warning('请先选择申请单')
+      return
+    }
+    try {
+      const result = await batchPrintDocuments({ application_ids: selectedAppIds, doc_type: docType })
+      message.success(`已生成 ${result.total_count} 份文档`)
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
+  const handleSendReminder = async (appId: number, type: string) => {
+    try {
+      await sendReminder({ application_id: appId, reminder_type: type })
+      message.success('催款通知已发送')
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
+  const loadReminderLogs = async () => {
+    try {
+      const logs = await fetchTaskReminderLogs()
+      setReminderLogs(logs || [])
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleBankImport = async (file: File) => {
+    try {
+      const result = await importBankReconciliation(file)
+      message.success(`导入成功：匹配 ${result.matched_count} 条，未匹配 ${result.unmatched_count} 条`)
+      const detail = await fetchBankReconciliationItems(result.id)
+      setReconItems(detail)
+      setReconDetailVisible(true)
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+    return false
   }
 
   const reminderColumns: ColumnsType<DailyReminderItem> = [
@@ -67,7 +156,18 @@ function DailyTasks() {
       dataIndex: 'balance',
       render: (v: number) => `¥${v}`
     },
-    { title: '截止日期', dataIndex: 'balance_deadline' }
+    { title: '截止日期', dataIndex: 'balance_deadline' },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: unknown, record: DailyReminderItem) => (
+        <Space size="small">
+          <Button size="small" icon={<MailOutlined />} onClick={() => handleSendReminder(record.app_id, 'email')} />
+          <Button size="small" icon={<MessageOutlined />} onClick={() => handleSendReminder(record.app_id, 'sms')} />
+          <Button size="small" icon={<PrinterOutlined />} onClick={() => handleSendReminder(record.app_id, 'print')} />
+        </Space>
+      )
+    },
   ]
 
   const financeColumns: ColumnsType<Record<string, unknown>> = [
@@ -84,18 +184,44 @@ function DailyTasks() {
       dataIndex: 'amount',
       render: (v: number) => `¥${v}`
     },
-    { title: '时间', dataIndex: 'created_at' }
+    { title: '时间', dataIndex: 'created_at' },
+  ]
+
+  const reminderLogColumns: ColumnsType<ReminderLog> = [
+    { title: '申请ID', dataIndex: 'application_id' },
+    {
+      title: '方式',
+      dataIndex: 'reminder_type',
+      render: (v: string) => {
+        const map: Record<string, { icon: React.ReactNode; color: string }> = {
+          email: { icon: <MailOutlined />, color: 'blue' },
+          sms: { icon: <MessageOutlined />, color: 'green' },
+          print: { icon: <PrinterOutlined />, color: 'orange' },
+        }
+        const item = map[v]
+        return item ? <Tag color={item.color}>{item.icon} {v === 'email' ? '邮件' : v === 'sms' ? '短信' : '打印'}</Tag> : v
+      }
+    },
+    { title: '内容', dataIndex: 'content', ellipsis: true },
+    { title: '发送时间', dataIndex: 'sent_at' },
+  ]
+
+  const reconItemColumns: ColumnsType<BankReconciliationItem> = [
+    { title: '银行日期', dataIndex: 'bank_date' },
+    { title: '银行金额', dataIndex: 'bank_amount', render: (v: number) => `¥${v}` },
+    { title: '银行参考号', dataIndex: 'bank_ref' },
+    { title: '匹配支付ID', dataIndex: 'matched_payment_id', render: (v: number | null) => v || '-' },
+    {
+      title: '状态',
+      dataIndex: 'is_matched',
+      render: (v: boolean) => v ? <Tag color="success">已匹配</Tag> : <Tag color="error">未匹配</Tag>
+    },
   ]
 
   const tabItems = [
     {
       key: 'reminders',
-      label: (
-        <span>
-          <FileTextOutlined />
-          催款单
-        </span>
-      ),
+      label: <span><FileTextOutlined /> 催款单</span>,
       children: (
         <div>
           <Space style={{ marginBottom: 16 }}>
@@ -107,6 +233,12 @@ function DailyTasks() {
             <Button type="primary" onClick={() => selectedDate && loadReminders(selectedDate)}>
               查询
             </Button>
+            <Button onClick={() => handleBatchPrint('payment_order')} disabled={selectedAppIds.length === 0}>
+              批量打印交款单
+            </Button>
+            <Button onClick={() => handleBatchPrint('confirmation')} disabled={selectedAppIds.length === 0}>
+              批量打印确认书
+            </Button>
           </Space>
           <Table
             dataSource={reminders}
@@ -114,18 +246,17 @@ function DailyTasks() {
             rowKey="app_id"
             loading={loading}
             pagination={false}
+            rowSelection={{
+              selectedRowKeys: selectedAppIds,
+              onChange: (keys) => setSelectedAppIds(keys as number[]),
+            }}
           />
         </div>
       )
     },
     {
       key: 'finance',
-      label: (
-        <span>
-          <DollarOutlined />
-          财务流水
-        </span>
-      ),
+      label: <span><DollarOutlined /> 财务流水</span>,
       children: (
         <div>
           <Space style={{ marginBottom: 16 }}>
@@ -137,8 +268,11 @@ function DailyTasks() {
             <Button type="primary" onClick={() => selectedDate && loadFinance(selectedDate)}>
               查询
             </Button>
-            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+            <Button icon={<DownloadOutlined />} onClick={() => setExportModalVisible(true)}>
               导出
+            </Button>
+            <Button onClick={handleFinanceReport}>
+              财务报表
             </Button>
           </Space>
           <Table
@@ -150,7 +284,41 @@ function DailyTasks() {
           />
         </div>
       )
-    }
+    },
+    {
+      key: 'reminder_logs',
+      label: <span><MessageOutlined /> 催款记录</span>,
+      children: (
+        <div>
+          <Button onClick={loadReminderLogs} style={{ marginBottom: 16 }}>刷新催款记录</Button>
+          <Table
+            dataSource={reminderLogs}
+            columns={reminderLogColumns}
+            rowKey="id"
+            pagination={false}
+            size="small"
+          />
+        </div>
+      )
+    },
+    {
+      key: 'bank_reconciliation',
+      label: <span><BankOutlined /> 银行对账</span>,
+      children: (
+        <div>
+          <Space style={{ marginBottom: 16 }}>
+            <Upload
+              beforeUpload={(file) => { handleBankImport(file); return false }}
+              showUploadList={false}
+              accept=".json"
+            >
+              <Button icon={<UploadOutlined />}>导入银行对账单</Button>
+            </Upload>
+          </Space>
+          <p style={{ color: '#999' }}>请上传JSON格式的银行对账单文件</p>
+        </div>
+      )
+    },
   ]
 
   return (
@@ -159,6 +327,78 @@ function DailyTasks() {
       <Card>
         <Tabs items={tabItems} />
       </Card>
+
+      <Modal
+        title="导出财务数据"
+        open={exportModalVisible}
+        onOk={handleExport}
+        onCancel={() => setExportModalVisible(false)}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item label="导出格式" name="format" initialValue="csv">
+            <Select options={[
+              { label: 'CSV', value: 'csv' },
+              { label: 'Excel (UTF-8 CSV)', value: 'excel' },
+              { label: 'JSON', value: 'json' },
+            ]} />
+          </Form.Item>
+          <Form.Item label="自定义导出字段">
+            <Checkbox.Group
+              options={[
+                { label: '支付ID', value: 'payment_id' },
+                { label: '申请ID', value: 'application_id' },
+                { label: '团代码', value: 'tour_code' },
+                { label: '类型', value: 'type' },
+                { label: '金额', value: 'amount' },
+                { label: '支付方式', value: 'payment_method' },
+                { label: '时间', value: 'created_at' },
+              ]}
+              onChange={(values) => form.setFieldValue('fields', values)}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="财务对账报表"
+        open={reportModalVisible}
+        onCancel={() => setReportModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        {financeReport && (
+          <Row gutter={16}>
+            <Col span={12}>
+              <Statistic title="订金总额" value={financeReport.total_deposits} prefix="¥" />
+            </Col>
+            <Col span={12}>
+              <Statistic title="尾款总额" value={financeReport.total_balances} prefix="¥" />
+            </Col>
+            <Col span={12}>
+              <Statistic title="退款总额" value={financeReport.total_refunds} prefix="¥" />
+            </Col>
+            <Col span={12}>
+              <Statistic title="净收入" value={financeReport.net_income} prefix="¥" />
+            </Col>
+          </Row>
+        )}
+      </Modal>
+
+      <Modal
+        title="银行对账明细"
+        open={reconDetailVisible}
+        onCancel={() => setReconDetailVisible(false)}
+        width={800}
+        footer={null}
+      >
+        <Table
+          dataSource={reconItems}
+          columns={reconItemColumns}
+          rowKey="id"
+          pagination={false}
+          size="small"
+        />
+      </Modal>
     </div>
   )
 }
