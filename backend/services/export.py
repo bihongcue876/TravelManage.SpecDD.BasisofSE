@@ -99,16 +99,27 @@ def save_finance_export(db: Session, target_date: date, records: List[dict],
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(records, f, ensure_ascii=False, indent=2)
     elif fmt == "excel":
-        file_name = f"finance_{target_date.isoformat()}.csv"
+        import openpyxl
+        from openpyxl.styles import Font, Alignment
+        file_name = f"finance_{target_date.isoformat()}.xlsx"
         file_path = os.path.join(export_dir, file_name)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "财务数据"
         if records:
             fieldnames = list(records[0].keys())
         else:
             fieldnames = ["payment_id", "application_id", "tour_code", "type", "amount", "payment_method", "created_at"]
-        with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(records)
+        # 写表头
+        header_font = Font(bold=True)
+        for col, name in enumerate(fieldnames, 1):
+            cell = ws.cell(row=1, column=col, value=name)
+            cell.font = header_font
+        # 写数据
+        for row_idx, record in enumerate(records, 2):
+            for col_idx, field in enumerate(fieldnames, 1):
+                ws.cell(row=row_idx, column=col_idx, value=record.get(field))
+        wb.save(file_path)
     else:
         raise ValueError(f"Unsupported format: {fmt}")
 

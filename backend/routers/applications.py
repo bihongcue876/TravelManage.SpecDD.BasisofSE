@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
-from models import Application, Participant, AppState, PaymentLog, Refund, ParticipantEditHistory
+from models import Application, Participant, AppState, PaymentLog, Refund, ParticipantEditHistory, Group
 from schemas import (
     ApplicationCreate, ApplicationResponse, ApplicationDetailResponse,
     ParticipantCreate, ParticipantUpdate, ParticipantResponse,
     PaymentRequest, ParticipantsBulkRequest, CancelPreviewResponse,
-    CancelPreviewDetailResponse, ApplicationSearchParams,
+    ApplicationSearchParams,
     PaymentLogDetailResponse, RemainingBalanceResponse,
     DepositPreviewResponse, ParticipantEditHistoryResponse,
     DuplicateParticipantWarning, RefundDetailResponse,
@@ -43,11 +43,11 @@ def search_applications(
     query = db.query(Application).join(Application.group)
 
     if code:
-        query = query.filter(Application.group.has(code=code))
+        query = query.filter(Group.code.like(f"%{code}%"))
     if departure_from:
-        query = query.filter(Application.group.has(departure_date=departure_from))
+        query = query.filter(Group.departure_date >= departure_from)
     if departure_to:
-        query = query.filter(Application.group.has(departure_date=departure_to))
+        query = query.filter(Group.departure_date <= departure_to)
     if name:
         query = query.filter(Application.name.like(f"%{name}%"))
 
@@ -308,7 +308,7 @@ def partial_cancel_application(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{application_id}/cancel-preview", response_model=CancelPreviewDetailResponse)
+@router.get("/{application_id}/cancel-preview", response_model=CancelPreviewResponse)
 def get_cancel_preview(application_id: int, db: Session = Depends(get_db)):
     try:
         preview = app_service.get_cancel_preview(db, application_id)

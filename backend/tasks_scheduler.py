@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 def generate_daily_reminders_job():
     with SessionLocal() as db:
         try:
-            yesterday = date.today()
-            reminders = export_service.generate_daily_reminders(db, yesterday)
-            logger.info(f"Generated {reminders.count} daily reminders for {yesterday}")
+            today = date.today()
+            reminders = export_service.generate_daily_reminders(db, today)
+            logger.info(f"Generated {reminders.count} daily reminders for {today}")
         except Exception as e:
             logger.error(f"Error generating daily reminders: {e}")
 
@@ -25,11 +25,11 @@ def generate_daily_reminders_job():
 def export_finance_job():
     with SessionLocal() as db:
         try:
-            yesterday = date.today()
-            records = export_service.generate_finance_export(db, yesterday)
+            today = date.today()
+            records = export_service.generate_finance_export(db, today)
             if records:
-                export_service.save_finance_export(db, yesterday, records)
-                logger.info(f"Exported {len(records)} finance records for {yesterday}")
+                export_service.save_finance_export(db, today, records)
+                logger.info(f"Exported {len(records)} finance records for {today}")
         except Exception as e:
             logger.error(f"Error exporting finance data: {e}")
 

@@ -6,16 +6,22 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from datetime import datetime
 from pathlib import Path
+import pytest
 
 import sys
 import os
-import yaml
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import Base, get_db
 from main import app
 from pytest_bdd import given, then, parsers
-from openapi_core import V30ResponseValidator
+
+try:
+    import yaml
+    from openapi_core import V30ResponseValidator, OpenAPI
+    HAS_OPENAPI_SPEC = True
+except ImportError:
+    HAS_OPENAPI_SPEC = False
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -69,14 +75,17 @@ SPEC_PATH = Path(__file__).parent.parent.parent / "docs" / "spec" / "openapi.yam
 
 @pytest.fixture(scope="module")
 def openapi_spec():
+    if not HAS_OPENAPI_SPEC:
+        pytest.skip("openapi_core / PyYAML not installed, skipping OpenAPI validation")
     with open(SPEC_PATH, "r", encoding="utf-8") as f:
         spec_dict = yaml.safe_load(f)
-    from openapi_core import OpenAPI
     return OpenAPI.from_dict(spec_dict)
 
 
 @pytest.fixture
 def response_validator(openapi_spec):
+    if not HAS_OPENAPI_SPEC:
+        pytest.skip("openapi_core / PyYAML not installed, skipping OpenAPI validation")
     return V30ResponseValidator(openapi_spec)
 
 
