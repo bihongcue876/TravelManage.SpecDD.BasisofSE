@@ -1,5 +1,6 @@
 export interface Route {
   id: number
+  code: string
   name: string
   descr: string | null
   is_active: boolean
@@ -235,4 +236,107 @@ export interface BankReconciliationItem {
   bank_ref: string | null
   matched_payment_id: number | null
   is_matched: boolean
+}
+
+// ── 用户相关类型 ──
+
+export interface UserInfo {
+  id: number
+  username: string
+  name: string
+  role: string
+  email: string | null
+  phone: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface PredefinedUser {
+  username: string
+  name: string
+  role: string
+  default_password: string
+}
+
+export interface ChangePasswordRequest {
+  old_password: string
+  new_password: string
+}
+
+// ── 类型别名（与 protocal.ts 对齐） ──
+
+export type Gender = 'M' | 'F' | 'O'
+export type AppState = 'draft' | 'deposit_paid' | 'confirmed' | 'cancelled'
+export type PaymentType = 'deposit' | 'balance'
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'wechat' | 'alipay'
+export type RefundStatus = 'pending' | 'approved' | 'rejected' | 'completed'
+export type RefundChannel = 'original' | 'cash' | 'bank_transfer'
+export type ReminderType = 'email' | 'sms' | 'print'
+
+// ── 缺失的请求/响应类型 ──
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+  role: string
+  username: string
+  name: string
+}
+
+export interface FrontdeskDashboard {
+  new_applications_today: number
+  pending_participants: number
+}
+
+export interface CollectorDashboard {
+  reminders_today: number
+  overdue_balance: number
+}
+
+export interface ProductDashboard {
+  upcoming_groups: number
+  unpublished_groups: number
+}
+
+export interface FinanceDashboard {
+  yesterday_income: number
+  yesterday_exports: number
+  pending_refunds: number
+}
+
+export interface UserCreateRequest {
+  username: string
+  password: string
+  name: string
+  role: string
+  email?: string
+  phone?: string
+}
+
+export interface UserUpdateRequest {
+  username?: string
+  password?: string
+  name?: string
+  role?: string
+  email?: string
+  phone?: string
+  is_active?: boolean
+}
+
+export interface FinanceExportRequest {
+  target_date?: string
+  format?: 'csv' | 'excel' | 'json'
+  fields?: string[]
+}
+
+export interface FinanceExportResponse {
+  export_id: number
+  file_path: string
+  file_format: string
+  record_count: number
 }

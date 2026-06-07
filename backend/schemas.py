@@ -25,6 +25,7 @@ class RouteUpdate(BaseModel):
 class RouteResponse(RouteBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    code: str
     created_at: datetime
 
 
@@ -128,6 +129,8 @@ class PaymentLogResponse(BaseModel):
     application_id: int
     type: str
     amount: Decimal
+    payment_method: Optional[str] = None
+    voucher_path: Optional[str] = None
     created_at: datetime
 
 
@@ -145,6 +148,9 @@ class CancelPreviewResponse(BaseModel):
     total_paid: Decimal
     cancel_fee: Decimal
     refund_amount: Decimal
+    is_partial: bool = False
+    participant_count: int = 0
+    per_participant_refund: Optional[Decimal] = None
 
 
 class PricingPreviewResponse(BaseModel):
@@ -276,15 +282,6 @@ class PartialCancelRequest(BaseModel):
 class RefundApprovalRequest(BaseModel):
     approved: bool
     approved_by: str
-
-
-class CancelPreviewDetailResponse(BaseModel):
-    total_paid: Decimal
-    cancel_fee: Decimal
-    refund_amount: Decimal
-    is_partial: bool = False
-    participant_count: int = 0
-    per_participant_refund: Optional[Decimal] = None
 
 
 class ReminderLogResponse(BaseModel):

@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { fetchGroups, createGroup, updateGroup, publishGroup, fetchRoutes, importGroupsExcel, downloadGroupTemplate } from '../api'
 import type { Group, Route } from '../types'
+import { formatDate } from '../utils'
 import './AdminGroups.css'
 
 function AdminGroups() {
@@ -122,8 +123,8 @@ function AdminGroups() {
   const columns: ColumnsType<Group> = [
     { title: '团代码', dataIndex: 'code' },
     { title: '路线', dataIndex: 'route_id', render: (id: number) => routes.find((r: Route) => r.id === id)?.name || id },
-    { title: '出发日期', dataIndex: 'departure_date' },
-    { title: '截止日期', dataIndex: 'deadline' },
+    { title: '截止日期', dataIndex: 'deadline', render: (v: string) => formatDate(v) },
+    { title: '出发日期', dataIndex: 'departure_date', render: (v: string) => formatDate(v) },
     { title: '名额', dataIndex: 'max_pax' },
     { title: '成人价', dataIndex: 'adult_price', render: (v: number | null) => v !== null ? `¥${v}` : '-' },
     { title: '儿童价', dataIndex: 'child_price', render: (v: number | null) => v !== null ? `¥${v}` : '-' },
@@ -202,16 +203,16 @@ function AdminGroups() {
             <Input />
           </Form.Item>
           <Form.Item
-            name="departure_date"
-            label="出发日期"
-            rules={[{ required: true, message: '请选择出发日期' }]}
+            name="deadline"
+            label="截止日期"
+            rules={[{ required: true, message: '请选择截止日期' }]}
           >
             <DatePicker format={dateFormat} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
-            name="deadline"
-            label="截止日期"
-            rules={[{ required: true, message: '请选择截止日期' }]}
+            name="departure_date"
+            label="出发日期"
+            rules={[{ required: true, message: '请选择出发日期' }]}
           >
             <DatePicker format={dateFormat} style={{ width: '100%' }} />
           </Form.Item>

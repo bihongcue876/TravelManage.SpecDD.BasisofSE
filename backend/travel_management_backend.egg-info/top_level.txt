@@ -1,4 +1,0 @@
-allure-report
-allure-results
-routers
-services

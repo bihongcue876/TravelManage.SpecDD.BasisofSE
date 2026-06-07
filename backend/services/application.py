@@ -279,7 +279,11 @@ def partial_cancel(db: Session, app_id: int, participant_ids: List[int],
     for p in participants:
         db.delete(p)
 
-    application.adults = application.adults - sum(1 for p in participants if p.gender != 'F' or True)
+    # 按成人/儿童比例分配取消人数，保证 adults + children = 剩余人数
+    if total_participants > 0:
+        adult_reduction = round(cancel_count * application.adults / total_participants)
+        application.adults = max(0, application.adults - adult_reduction)
+        application.children = max(0, (total_participants - cancel_count) - application.adults)
     new_total = application.adults + application.children
     if new_total <= 0:
         application.state = AppState.CANCELLED
@@ -388,11 +392,15 @@ def check_duplicate_participants(db: Session, group_id: int, phone: Optional[str
             })
 
     if id_number:
-        existing = db.query(Participant).join(Participant.application).filter(
-            Participant.extra.contains({"id_number": id_number}),
+        # 使用 Python 层过滤以保证 SQLite/PostgreSQL 兼容
+        existing_participants = db.query(Participant).join(Participant.application).filter(
             Application.group_id == group_id,
             Application.state != AppState.CANCELLED,
-        ).first()
+        ).all()
+        existing = next(
+            (p for p in existing_participants if p.extra and p.extra.get("id_number") == id_number),
+            None
+        )
         if existing:
             warnings.append({
                 "field": "id_number",

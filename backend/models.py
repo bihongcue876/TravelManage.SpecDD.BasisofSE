@@ -11,6 +11,26 @@ from sqlalchemy.sql import func
 from database import Base
 
 
+class Role(str, enum.Enum):
+    ADMIN = "admin"
+    FRONTDESK = "frontdesk"
+    FINANCE = "finance"
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[Role] = mapped_column(SQLEnum(Role, name="user_role", create_type=False), nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+
 class AppState(str, enum.Enum):
     DRAFT = "draft"
     DEPOSIT_PAID = "deposit_paid"
@@ -48,12 +68,28 @@ class Route(Base):
     __tablename__ = "routes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(12), nullable=False, unique=True, comment="路线编号，如 RT0000000001")
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     descr: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
 
     groups: Mapped[List["Group"]] = relationship("Group", back_populates="route")
+    history: Mapped[List["RouteHistory"]] = relationship("RouteHistory", back_populates="route", cascade="all, delete-orphan")
+
+
+class RouteHistory(Base):
+    __tablename__ = "route_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    route_id: Mapped[int] = mapped_column(Integer, ForeignKey("routes.id"), nullable=False)
+    code: Mapped[str] = mapped_column(String(12), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    descr: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+
+    route: Mapped["Route"] = relationship("Route", back_populates="history")
 
 
 class Group(Base):

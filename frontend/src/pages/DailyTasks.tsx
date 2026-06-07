@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card, Table, DatePicker, Button, Space, Tabs, message, Tag, Select,
   Modal, Form, Upload, Checkbox, Row, Col, Statistic
@@ -20,6 +20,7 @@ import type {
   DailyReminderItem, FinanceReport, ReminderLog,
   BankReconciliation, BankReconciliationItem
 } from '../types'
+import { formatDate, formatDateTime } from '../utils'
 import './DailyTasks.css'
 
 function DailyTasks() {
@@ -35,6 +36,7 @@ function DailyTasks() {
   const [reconDetailVisible, setReconDetailVisible] = useState(false)
   const [exportModalVisible, setExportModalVisible] = useState(false)
   const [reportModalVisible, setReportModalVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState('reminders')
   const [form] = Form.useForm()
 
   const loadReminders = async (date: string) => {
@@ -70,7 +72,15 @@ function DailyTasks() {
         format: values.format || 'csv',
         fields: values.fields,
       })
-      message.success(`导出成功（${values.format || 'csv'}），共 ${result.record_count} 条记录`)
+      // 自动下载导出的文件
+      const downloadUrl = `/${result.file_path.replace(/\\/g, '/')}`
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = result.file_path.split(/[/\\]/).pop() || `finance_${selectedDate}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      message.success(`导出成功，共 ${result.record_count} 条记录，已开始下载`)
       setExportModalVisible(false)
     } catch (error) {
       message.error((error as Error).message)
@@ -91,6 +101,13 @@ function DailyTasks() {
       message.error((error as Error).message)
     }
   }
+
+  // 切到财务流水 tab 或切换日期时自动加载
+  useEffect(() => {
+    if (activeTab === 'finance' && selectedDate) {
+      loadFinance(selectedDate)
+    }
+  }, [activeTab, selectedDate])
 
   const handleBatchPrint = async (docType: string) => {
     if (selectedAppIds.length === 0) {
@@ -184,7 +201,7 @@ function DailyTasks() {
       dataIndex: 'amount',
       render: (v: number) => `¥${v}`
     },
-    { title: '时间', dataIndex: 'created_at' },
+    { title: '时间', dataIndex: 'created_at', render: (v: string) => formatDateTime(v) },
   ]
 
   const reminderLogColumns: ColumnsType<ReminderLog> = [
@@ -203,11 +220,11 @@ function DailyTasks() {
       }
     },
     { title: '内容', dataIndex: 'content', ellipsis: true },
-    { title: '发送时间', dataIndex: 'sent_at' },
+    { title: '发送时间', dataIndex: 'sent_at', render: (v: string) => formatDateTime(v) },
   ]
 
   const reconItemColumns: ColumnsType<BankReconciliationItem> = [
-    { title: '银行日期', dataIndex: 'bank_date' },
+    { title: '银行日期', dataIndex: 'bank_date', render: (v: string) => formatDate(v) },
     { title: '银行金额', dataIndex: 'bank_amount', render: (v: number) => `¥${v}` },
     { title: '银行参考号', dataIndex: 'bank_ref' },
     { title: '匹配支付ID', dataIndex: 'matched_payment_id', render: (v: number | null) => v || '-' },
@@ -325,7 +342,7 @@ function DailyTasks() {
     <div>
       <h2>催款与报表</h2>
       <Card>
-        <Tabs items={tabItems} />
+        <Tabs items={tabItems} onChange={(key) => setActiveTab(key)} />
       </Card>
 
       <Modal
