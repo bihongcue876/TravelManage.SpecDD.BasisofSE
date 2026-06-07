@@ -1,29 +1,25 @@
 /**
- * 旅游业务管理系统 - 接口协议定义 v2.0
- * 依据: protocol.md v2.0 与现有后端实现
- * 用途: 前端类型安全与 API 路径管理
+ * 旅游业务管理系统 - 接口协议定义 v2.2
+ * 对应后端 API (FastAPI + SQLAlchemy)
+ * 用途: 前端 TypeScript 类型安全 + 路径统一管理
+ * 
+ * 变更：角色体系由旧四角色调整为三角色（admin / frontdesk / finance）
  */
 
-// ───────────────────────── 基础类型 ─────────────────────────
+// ───────────────────── 基础类型 ─────────────────────
 
-export type ApplicationState = 'draft' | 'deposit_paid' | 'confirmed' | 'cancelled';
+export type Role = 'admin' | 'frontdesk' | 'finance';
+export type AppState = 'draft' | 'deposit_paid' | 'confirmed' | 'cancelled';
 export type PaymentType = 'deposit' | 'balance';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'wechat' | 'alipay';
 export type RefundStatus = 'pending' | 'approved' | 'rejected' | 'completed';
 export type RefundChannel = 'original' | 'cash' | 'bank_transfer';
 export type ReminderType = 'email' | 'sms' | 'print';
-export type Gender = 'M' | 'F' | 'O';
-export type Role = 'frontdesk' | 'collector' | 'product_admin' | 'finance_admin';
+export type Gender = 'M' | 'F';
+export type DateString = string;     // YYYY-MM-DD
+export type DateTimeString = string; // ISO 8601
 
-export interface PaginationParams {
-  skip?: number;
-  limit?: number;
-}
-
-export type DateString = string;       // YYYY-MM-DD
-export type DateTimeString = string;   // ISO 8601
-
-// ───────────────────────── 用户与认证 ─────────────────────────
+// ───────────────────── 认证 / 用户 ─────────────────────
 
 export interface LoginRequest {
   username: string;
@@ -43,8 +39,10 @@ export interface UserInfo {
   username: string;
   name: string;
   role: Role;
-  email?: string;
-  phone?: string;
+  email: string | null;
+  phone: string | null;
+  is_active: boolean;
+  created_at: DateTimeString;
 }
 
 export interface UserCreateRequest {
@@ -63,35 +61,37 @@ export interface UserUpdateRequest {
   role?: Role;
   email?: string;
   phone?: string;
+  is_active?: boolean;
 }
 
-// ───────────────────────── 工作台 ─────────────────────────
-
-export interface FrontdeskDashboard {
-  new_applications_today: number;
-  pending_participants: number;  // deposit_paid && !info_completed
+export interface ChangePasswordRequest {
+  old_password: string;
+  new_password: string;
 }
 
-export interface CollectorDashboard {
-  reminders_today: number;       // 需催款数量
-  overdue_balance: number;       // 已逾期未付尾款数量
+// ───────────────────── 工作台（角色化仪表盘）─────────────────────
+// 建议后端提供统一 /api/dashboard 接口，根据当前登录用户的角色返回不同数据
+export interface DashboardResponse {
+  /** 管理员仪表盘 */
+  total_users?: number;
+  total_applications?: number;
+  today_income?: number;
+  pending_refunds?: number;
+  /** 前台仪表盘 */
+  new_applications_today?: number;
+  pending_participants?: number;
+  /** 财务仪表盘 */
+  yesterday_income?: number;
+  yesterday_exports?: number;
+  pending_approvals?: number;
+  // 具体字段以后端实际返回为准
 }
 
-export interface ProductDashboard {
-  upcoming_groups: number;       // 未来30天出发团数
-  unpublished_groups: number;    // 未发布价格团数
-}
-
-export interface FinanceDashboard {
-  yesterday_income: number;      // 昨日总流水(订金+尾款)
-  yesterday_exports: number;     // 昨日导出记录数
-  pending_refunds: number;       // 待审批退款数
-}
-
-// ───────────────────────── 路线相关 ─────────────────────────
+// ───────────────────── 路线 ─────────────────────
 
 export interface RouteResponse {
   id: number;
+  code: string;
   name: string;
   descr: string | null;
   is_active: boolean;
@@ -110,7 +110,7 @@ export interface RouteUpdateRequest {
   is_active?: boolean;
 }
 
-// ───────────────────────── 旅游团相关 ─────────────────────────
+// ───────────────────── 旅游团 ─────────────────────
 
 export interface GroupResponse {
   id: number;
@@ -159,7 +159,7 @@ export interface AvailabilityResponse {
 export interface PricingPreviewResponse {
   deposit: number;
   total_price: number;
-  deposit_rate: string;   // "10%", "20%", "100%"
+  deposit_rate: string;
 }
 
 export interface BalanceDeadlineResponse {
@@ -168,7 +168,7 @@ export interface BalanceDeadlineResponse {
   fallback_deadline: DateString;
 }
 
-// ───────────────────────── 申请单相关 ─────────────────────────
+// ───────────────────── 申请单 ─────────────────────
 
 export interface ApplicationResponse {
   id: number;
@@ -184,7 +184,7 @@ export interface ApplicationResponse {
   total_price: number;
   paid_deposit: number;
   paid_balance: number;
-  state: ApplicationState;
+  state: AppState;
   info_completed: boolean;
   cancelled_at: DateTimeString | null;
   created_at: DateTimeString;
@@ -215,7 +215,7 @@ export interface ApplicationSearchParams {
 
 export interface PaymentRequest {
   amount: number;
-  payment_method?: string;   // PaymentMethod
+  payment_method?: string;
   voucher_paths?: string[];
 }
 
@@ -236,7 +236,7 @@ export interface RemainingBalanceResponse {
   days_until_deadline: number;
 }
 
-// ───────────────────────── 参加者相关 ─────────────────────────
+// ───────────────────── 参加者 ─────────────────────
 
 export interface ParticipantResponse {
   id: number;
@@ -280,14 +280,14 @@ export interface ParticipantEditHistoryResponse {
 }
 
 export interface DuplicateParticipantWarning {
-  field: string;              // "phone" | "id_number"
+  field: string;
   value: string;
   existing_participant_id: number;
   existing_application_id: number;
   message: string;
 }
 
-// ───────────────────────── 支付凭证 ─────────────────────────
+// ───────────────────── 支付凭证 ─────────────────────
 
 export interface PaymentVoucherResponse {
   id: number;
@@ -309,7 +309,7 @@ export interface PaymentLogDetailResponse {
   vouchers: PaymentVoucherResponse[];
 }
 
-// ───────────────────────── 取消与退款 ─────────────────────────
+// ───────────────────── 取消与退款 ─────────────────────
 
 export interface CancelPreviewResponse {
   total_paid: number;
@@ -345,7 +345,7 @@ export interface RefundApprovalRequest {
   approved_by: string;
 }
 
-// ───────────────────────── 催款与交款单 ─────────────────────────
+// ───────────────────── 催款与交款单 ─────────────────────
 
 export interface DailyReminderItem {
   app_id: number;
@@ -392,7 +392,7 @@ export interface BatchPrintResponse {
   total_count: number;
 }
 
-// ───────────────────────── 财务导出 ─────────────────────────
+// ───────────────────── 财务 ─────────────────────
 
 export interface FinanceExportRequest {
   target_date?: DateString;
@@ -436,32 +436,34 @@ export interface BankReconciliationItemResponse {
   is_matched: boolean;
 }
 
-// ───────────────────────── 端点路径常量 ─────────────────────────
+// ───────────────────── 端点路径常量 ─────────────────────
 
 export const ENDPOINTS = {
-  // 认证
+  // ---- 认证 ----
   LOGIN: '/api/auth/login',
   ME: '/api/auth/me',
+  CHANGE_PASSWORD: '/api/auth/change-password',
 
-  // 用户管理
+  // ---- 用户管理（管理员专用） ----
   USERS: '/api/users',
   USER: (id: number) => `/api/users/${id}`,
 
-  // 工作台
-  DASHBOARD_FRONTDESK: '/api/dashboard/frontdesk',
-  DASHBOARD_COLLECTOR: '/api/dashboard/collector',
-  DASHBOARD_PRODUCT: '/api/dashboard/product',
-  DASHBOARD_FINANCE: '/api/dashboard/finance',
+  // ---- 工作台（统一接口，后端按角色返回不同数据） ----
+  DASHBOARD: '/api/dashboard',
 
-  // 路线
+  // ---- 路线 ----
   LIST_ROUTES: '/api/routes',
+  SEARCH_ROUTES: '/api/routes/search',
   GET_ROUTE: (id: number) => `/api/routes/${id}`,
   CREATE_ROUTE: '/api/routes',
   UPDATE_ROUTE: (id: number) => `/api/routes/${id}`,
+  DELETE_ROUTE: (id: number) => `/api/routes/${id}`,   // 实际为停用
+  DELETE_ROUTE_FORCE: (id: number) => `/api/routes/${id}/force`,  // 硬删除（无关联团时可用）
   IMPORT_ROUTES: '/api/routes/import',
   ROUTE_TEMPLATE: '/api/routes/template',
+  BATCH_UPDATE_ROUTES: '/api/routes/batch',
 
-  // 旅游团
+  // ---- 旅游团 ----
   LIST_GROUPS: '/api/groups',
   GET_GROUP: (id: number) => `/api/groups/${id}`,
   CREATE_GROUP: '/api/groups',
@@ -473,14 +475,12 @@ export const ENDPOINTS = {
   GROUP_PRICING_PREVIEW: (id: number) => `/api/groups/${id}/pricing-preview`,
   GROUP_BALANCE_DEADLINE: (id: number) => `/api/groups/${id}/balance-deadline`,
 
-  // 申请
+  // ---- 申请 ----
   CREATE_APPLICATION: '/api/applications',
   GET_APPLICATION: (id: number) => `/api/applications/${id}`,
   SEARCH_APPLICATIONS: '/api/applications/search',
   PAY_DEPOSIT: (id: number) => `/api/applications/${id}/pay-deposit`,
   PAY_BALANCE: (id: number) => `/api/applications/${id}/pay-balance`,
-  ADD_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
-  LIST_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
   CANCEL_APPLICATION: (id: number) => `/api/applications/${id}/cancel`,
   PARTIAL_CANCEL: (id: number) => `/api/applications/${id}/partial-cancel`,
   CANCEL_PREVIEW: (id: number) => `/api/applications/${id}/cancel-preview`,
@@ -497,8 +497,10 @@ export const ENDPOINTS = {
   UPDATE_PARTICIPANT: (participantId: number) => `/api/applications/participants/${participantId}`,
   PARTICIPANT_EDIT_HISTORY: (participantId: number) => `/api/applications/participants/${participantId}/edit-history`,
   DUPLICATE_CHECK: (appId: number) => `/api/applications/${appId}/duplicate-check`,
+  ADD_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
+  LIST_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
 
-  // 任务（催款/财务）
+  // ---- 任务 ----
   DAILY_REMINDERS: '/api/tasks/daily-reminders',
   DAILY_FINANCE: '/api/tasks/daily-finance',
   EXPORT_FINANCE: '/api/tasks/daily-finance/export',
