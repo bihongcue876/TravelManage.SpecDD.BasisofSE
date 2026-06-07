@@ -2,18 +2,28 @@ docs/
 
 .venv/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.tox/
+
+# Node
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-backend/__pycache__/
+# Backend runtime
 backend/.venv/
 backend/.env
-backend/*.pyc
-backend/*.pyo
+backend/__pycache__/
 backend/routers/__pycache__/
 backend/services/__pycache__/
-
 backend/tests/__pycache__/
 backend/*.egg-info/
 backend/.pytest_cache/
@@ -27,11 +37,31 @@ backend/test_*.db
 .coverage
 htmlcov/
 
+# Uploads & exports (user-generated)
+backend/uploads/
+backend/exports/
+
 # Allure
 backend/allure-results/
 backend/allure-report/
 docs/reports/
 
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.production
 
 .qwen/
 codes.md
+actions.md
