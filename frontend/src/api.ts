@@ -16,9 +16,28 @@ const api = axios.create({
   }
 })
 
+// 自动附加 Token
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 api.interceptors.response.use(
   response => response.data,
   error => {
+    // 仅在非登录接口返回 401 时清除 token，不直接跳转
+    // 由 React 路由守卫 (ProtectedRoute) 处理跳转
+    if (error.response?.status === 401) {
+      const isLoginRequest = error.config?.url?.includes('/auth/login')
+      if (!isLoginRequest) {
+        localStorage.removeItem('access_token')
+        // 触发全局事件，让 ProtectedRoute 渲染登录页
+        window.dispatchEvent(new Event('auth:logout'))
+      }
+    }
     const message = error.response?.data?.detail || error.message || '请求失败'
     return Promise.reject(new Error(message))
   }
@@ -61,12 +80,21 @@ export const fetchBalanceDeadline = (id: number, params?: { today?: string }): P
 
 export const fetchRoutes = (): Promise<Route[]> => api.get('/routes')
 
+export const searchRoutes = (q: string): Promise<Route[]> => api.get('/routes/search', { params: { q } })
+
 export const fetchRoute = (id: number): Promise<Route> => api.get(`/routes/${id}`)
 
 export const createRoute = (data: Partial<Route>): Promise<Route> => api.post('/routes', data)
 
 export const updateRoute = (id: number, data: Partial<Route>): Promise<Route> =>
   api.put(`/routes/${id}`, data)
+
+export const deactivateRoute = (id: number): Promise<void> => api.delete(`/routes/${id}`)
+
+export const deleteRouteForce = (id: number): Promise<void> => api.delete(`/routes/${id}/force`)
+
+export const batchUpdateRoutes = (ids: number[], is_active: boolean): Promise<{ updated: number }> =>
+  api.put('/routes/batch', { ids, is_active })
 
 export const importRoutesExcel = (file: File): Promise<{ imported: number }> => {
   const formData = new FormData()
@@ -201,3 +229,52 @@ export const fetchBankReconciliation = (id: number): Promise<BankReconciliation>
 
 export const fetchBankReconciliationItems = (id: number): Promise<BankReconciliationItem[]> =>
   api.get(`/tasks/bank-reconciliation/${id}/items`)
+
+// ── 认证与用户管理 ──
+
+export const login = (data: { username: string; password: string }): Promise<{
+  access_token: string; token_type: string; role: string; username: string; name: string
+}> => api.post('/auth/login', data)
+
+export const fetchMe = (): Promise<{ id: number; username: string; name: string; role: string; email: string | null; phone: string | null }> =>
+  api.get('/auth/me')
+
+export const fetchUsers = (): Promise<any[]> => api.get('/users')
+
+export const createUser = (data: any): Promise<any> => api.post('/users', data)
+
+export const updateUser = (id: number, data: any): Promise<any> => api.put(`/users/${id}`, data)
+
+export const deactivateUser = (id: number): Promise<void> => api.delete(`/users/${id}`)
+
+// ── 仪表盘 ──
+
+export const fetchFrontdeskDashboard = (): Promise<{ new_applications_today: number; pending_participants: number }> =>
+  api.get('/dashboard/frontdesk')
+
+export const fetchCollectorDashboard = (): Promise<{ reminders_today: number; overdue_balance: number }> =>
+  api.get('/dashboard/collector')
+
+export const fetchProductDashboard = (): Promise<{ upcoming_groups: number; unpublished_groups: number }> =>
+  api.get('/dashboard/product')
+
+export const fetchFinanceDashboard = (): Promise<{ yesterday_income: number; yesterday_exports: number; pending_refunds: number }> =>
+  api.get('/dashboard/finance')
+
+export const fetchAdminDashboard = (): Promise<{ total_users: number; total_applications: number; today_income: number; pending_refunds: number }> =>
+  api.get('/dashboard/admin')
+
+// ── 路线历史 ──
+
+export const fetchRouteHistory = (id: number): Promise<any[]> =>
+  api.get(`/routes/${id}/history`)
+
+// ── 修改密码 ──
+
+export const changePassword = (data: { old_password: string; new_password: string }): Promise<{ message: string }> =>
+  api.put('/auth/change-password', data)
+
+// ── 获取预设用户列表 ──
+
+export const fetchPredefinedUsers = (): Promise<{ username: string; name: string; role: string; default_password: string }[]> =>
+  api.get('/auth/predefined-users')

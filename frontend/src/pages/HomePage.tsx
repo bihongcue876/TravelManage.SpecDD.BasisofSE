@@ -1,113 +1,176 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Row, Col, Typography, Space } from 'antd'
+import { Card, Row, Col, Typography, Statistic, Spin } from 'antd'
 import {
   TeamOutlined,
   DollarOutlined,
   SettingOutlined,
   GlobalOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
+  UserAddOutlined,
+  WarningOutlined,
+  ClockCircleOutlined,
+  AppstoreOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
+import { useAuth } from '../auth'
+import {
+  fetchFrontdeskDashboard,
+  fetchFinanceDashboard,
+  fetchAdminDashboard,
+} from '../api'
 
 const { Title, Paragraph } = Typography
 
-const roleCards = [
-  {
-    title: '前台员工',
-    description: '查询旅游团、创建申请、录入参加者信息、管理支付',
-    icon: <TeamOutlined style={{ fontSize: 48, color: '#1677ff' }} />,
-    links: [
-      { label: '查询旅游团', path: '/groups' },
-      { label: '创建申请', path: '/apply' },
-      { label: '查看帮助', path: '/help' }
-    ]
-  },
-  {
-    title: '催款员工',
-    description: '管理催款单、查看财务流水、导出报表',
-    icon: <DollarOutlined style={{ fontSize: 48, color: '#1677ff' }} />,
-    links: [
-      { label: '催款与报表', path: '/admin/tasks' },
-      { label: '查看帮助', path: '/help' }
-    ]
-  },
-  {
-    title: '路线管理员',
-    description: '管理旅游路线、管理旅游团、发布价格',
-    icon: <SettingOutlined style={{ fontSize: 48, color: '#1a7e5a' }} />,
-    links: [
-      { label: '管理路线', path: '/admin/routes' },
-      { label: '管理旅游团', path: '/admin/groups' }
-    ]
-  }
-]
+function AdminPanel() {
+  const [data, setData] = useState<{ total_users: number; total_applications: number; today_income: number; pending_refunds: number } | null>(null)
+
+  useEffect(() => {
+    fetchAdminDashboard().then(setData).catch(() => {})
+  }, [])
+
+  if (!data) return <Spin />
+  return (
+    <Row gutter={[16, 16]}>
+      <Col span={6}>
+        <Statistic title="总用户数" value={data.total_users} prefix={<TeamOutlined />} />
+      </Col>
+      <Col span={6}>
+        <Statistic title="总申请数" value={data.total_applications} prefix={<FileTextOutlined />} />
+      </Col>
+      <Col span={6}>
+        <Statistic title="今日流水" value={data.today_income} prefix="¥" precision={2} />
+      </Col>
+      <Col span={6}>
+        <Statistic title="待审批退款" value={data.pending_refunds} prefix={<WarningOutlined />} valueStyle={{ color: data.pending_refunds > 0 ? '#cf1322' : '#3f8600' }} />
+      </Col>
+    </Row>
+  )
+}
+
+function FrontdeskPanel() {
+  const [data, setData] = useState<{ new_applications_today: number; pending_participants: number } | null>(null)
+
+  useEffect(() => {
+    fetchFrontdeskDashboard().then(setData).catch(() => {})
+  }, [])
+
+  if (!data) return <Spin />
+  return (
+    <Row gutter={[16, 16]}>
+      <Col span={12}>
+        <Statistic title="今日新增申请" value={data.new_applications_today} prefix={<UserAddOutlined />} />
+      </Col>
+      <Col span={12}>
+        <Statistic title="待录入参加者" value={data.pending_participants} prefix={<ClockCircleOutlined />} valueStyle={{ color: data.pending_participants > 0 ? '#cf1322' : '#3f8600' }} />
+      </Col>
+    </Row>
+  )
+}
+
+function FinancePanel() {
+  const [data, setData] = useState<{ yesterday_income: number; yesterday_exports: number; pending_refunds: number } | null>(null)
+
+  useEffect(() => {
+    fetchFinanceDashboard().then(setData).catch(() => {})
+  }, [])
+
+  if (!data) return <Spin />
+  return (
+    <Row gutter={[16, 16]}>
+      <Col span={8}>
+        <Statistic title="昨日流水" value={data.yesterday_income} prefix="¥" precision={2} />
+      </Col>
+      <Col span={8}>
+        <Statistic title="昨日导出" value={data.yesterday_exports} />
+      </Col>
+      <Col span={8}>
+        <Statistic title="待审批退款" value={data.pending_refunds} prefix={<WarningOutlined />} valueStyle={{ color: data.pending_refunds > 0 ? '#cf1322' : '#3f8600' }} />
+      </Col>
+    </Row>
+  )
+}
 
 function HomePage() {
   const navigate = useNavigate()
+  const { user, hasRole } = useAuth()
+
+  const roleConfig = hasRole('admin') ? { title: '管理工作台', icon: <SettingOutlined style={{ fontSize: 32, color: '#cf1322' }} />, panel: <AdminPanel /> }
+    : hasRole('frontdesk') ? { title: '前台工作台', icon: <TeamOutlined style={{ fontSize: 32, color: '#1677ff' }} />, panel: <FrontdeskPanel /> }
+    : hasRole('finance') ? { title: '财务工作台', icon: <DollarOutlined style={{ fontSize: 32, color: '#52c41a' }} />, panel: <FinancePanel /> }
+    : null
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 48, marginTop: 24 }}>
+      <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 24 }}>
         <GlobalOutlined style={{ fontSize: 64, color: '#1677ff', marginBottom: 16 }} />
         <Title level={2}>欢迎使用旅游业务管理系统</Title>
         <Paragraph style={{ fontSize: 16, color: '#666' }}>
-          高效管理旅游团、申请单、支付与催款流程
+          {user?.name} · {user?.role === 'admin' ? '系统管理员' :
+            user?.role === 'frontdesk' ? '前台员工' : '财务人员'}
         </Paragraph>
       </div>
 
+      {roleConfig && (
+        <Card
+          title={<span style={{ fontSize: 18 }}>{roleConfig.icon} {roleConfig.title}</span>}
+          style={{ borderRadius: 8, marginBottom: 24 }}
+        >
+          {roleConfig.panel}
+        </Card>
+      )}
+
       <Row gutter={[24, 24]}>
-        {roleCards.map((role) => (
-          <Col xs={24} sm={12} md={8} key={role.title}>
-            <Card
-              hoverable
-              style={{ height: '100%', borderRadius: 8 }}
-              styles={{ body: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', height: '100%' } }}
-            >
-              <div style={{ marginBottom: 16 }}>{role.icon}</div>
-              <Title level={4}>{role.title}</Title>
-              <Paragraph style={{ color: '#666', marginBottom: 16 }}>{role.description}</Paragraph>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                {role.links.map((link) => (
-                  <Card
-                    key={link.path}
-                    size="small"
-                    hoverable
-                    onClick={() => navigate(link.path)}
-                    style={{ width: '100%', textAlign: 'center' }}
-                  >
-                    {link.label}
-                  </Card>
-                ))}
-              </Space>
+        <Col xs={24} sm={12} md={6}>
+          <Card hoverable onClick={() => navigate('/groups')} style={{ borderRadius: 8, textAlign: 'center' }}>
+            <TeamOutlined style={{ fontSize: 36, color: '#1677ff' }} />
+            <div style={{ marginTop: 8 }}>旅游团查询</div>
+          </Card>
+        </Col>
+        {(hasRole('finance', 'admin')) && (
+          <Col xs={24} sm={12} md={6}>
+            <Card hoverable onClick={() => navigate('/admin/tasks')} style={{ borderRadius: 8, textAlign: 'center' }}>
+              <DollarOutlined style={{ fontSize: 36, color: '#52c41a' }} />
+              <div style={{ marginTop: 8 }}>催款与报表</div>
             </Card>
           </Col>
-        ))}
-      </Row>
-
-      <Row gutter={[24, 24]} style={{ marginTop: 24, marginBottom: 48 }}>
-        <Col xs={24} sm={12}>
-          <Card
-            hoverable
-            onClick={() => navigate('/help')}
-            style={{ borderRadius: 8 }}
-          >
-            <Space align="center" style={{ width: '100%', justifyContent: 'center' }}>
-              <QuestionCircleOutlined style={{ fontSize: 24, color: '#1677ff' }} />
-              <span style={{ fontSize: 16 }}>使用帮助</span>
-            </Space>
+        )}
+        {(hasRole('admin')) && (
+          <>
+            <Col xs={24} sm={12} md={6}>
+              <Card hoverable onClick={() => navigate('/admin/routes')} style={{ borderRadius: 8, textAlign: 'center' }}>
+                <SettingOutlined style={{ fontSize: 36, color: '#faad14' }} />
+                <div style={{ marginTop: 8 }}>管理路线</div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card hoverable onClick={() => navigate('/admin/groups')} style={{ borderRadius: 8, textAlign: 'center' }}>
+                <AppstoreOutlined style={{ fontSize: 36, color: '#722ed1' }} />
+                <div style={{ marginTop: 8 }}>管理旅游团</div>
+              </Card>
+            </Col>
+          </>
+        )}
+        <Col xs={24} sm={12} md={6}>
+          <Card hoverable onClick={() => navigate('/help')} style={{ borderRadius: 8, textAlign: 'center' }}>
+            <QuestionCircleOutlined style={{ fontSize: 36, color: '#1677ff' }} />
+            <div style={{ marginTop: 8 }}>使用帮助</div>
           </Card>
         </Col>
-        <Col xs={24} sm={12}>
-          <Card
-            hoverable
-            onClick={() => navigate('/user/profile')}
-            style={{ borderRadius: 8 }}
-          >
-            <Space align="center" style={{ width: '100%', justifyContent: 'center' }}>
-              <TeamOutlined style={{ fontSize: 24, color: '#1677ff' }} />
-              <span style={{ fontSize: 16 }}>个人中心</span>
-            </Space>
+        <Col xs={24} sm={12} md={6}>
+          <Card hoverable onClick={() => navigate('/user/profile')} style={{ borderRadius: 8, textAlign: 'center' }}>
+            <UserAddOutlined style={{ fontSize: 36, color: '#1677ff' }} />
+            <div style={{ marginTop: 8 }}>个人中心</div>
           </Card>
         </Col>
+        {hasRole('admin') && (
+          <Col xs={24} sm={12} md={6}>
+            <Card hoverable onClick={() => navigate('/admin/users')} style={{ borderRadius: 8, textAlign: 'center' }}>
+              <TeamOutlined style={{ fontSize: 36, color: '#eb2f96' }} />
+              <div style={{ marginTop: 8 }}>用户管理</div>
+            </Card>
+          </Col>
+        )}
       </Row>
     </div>
   )

@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { fetchGroups } from '../api'
 import type { Group } from '../types'
+import { formatDate } from '../utils'
 import './GroupList.css'
 
 const { RangePicker } = DatePicker
@@ -51,8 +52,8 @@ function GroupList() {
 
   const columns: ColumnsType<Group> = [
     { title: '团代码', dataIndex: 'code', key: 'code' },
-    { title: '出发日期', dataIndex: 'departure_date', key: 'departure_date' },
-    { title: '截止日期', dataIndex: 'deadline', key: 'deadline' },
+    { title: '截止日期', dataIndex: 'deadline', key: 'deadline', render: (v: string) => formatDate(v) },
+    { title: '出发日期', dataIndex: 'departure_date', key: 'departure_date', render: (v: string) => formatDate(v) },
     {
       title: '成人价',
       dataIndex: 'adult_price',

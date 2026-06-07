@@ -22,6 +22,7 @@ import type {
   RemainingBalance, PaymentLogDetail, RefundDetail, ReminderLog,
   DuplicateParticipantWarning
 } from '../types'
+import { formatDateTime } from '../utils'
 import './AppDetail.css'
 
 const stateMap: Record<string, { text: string; color: string }> = {
@@ -252,19 +253,19 @@ function AppDetail() {
 
   if (!application) return null
 
-  const currentStep = application.state === 'draft' ? 0 :
-    application.state === 'deposit_paid' && !application.info_completed ? 1 :
+  const currentStep = application.state === 'draft' ? 1 :
+    application.state === 'deposit_paid' && !application.info_completed ? 2 :
     application.state === 'deposit_paid' && application.info_completed &&
-    application.paid_balance < application.total_price - application.paid_deposit ? 2 :
+    application.paid_balance < application.total_price - application.paid_deposit ? 3 :
     application.state === 'deposit_paid' && application.info_completed &&
-    application.paid_balance >= application.total_price - application.paid_deposit ? 3 :
-    application.state === 'confirmed' ? 4 : 0
+    application.paid_balance >= application.total_price - application.paid_deposit ? 4 :
+    application.state === 'confirmed' ? 4 : 1
 
   const balance = application.total_price - application.paid_deposit - application.paid_balance
 
   const participantColumns = [
     { title: '姓名', dataIndex: 'name', key: 'name' },
-    { title: '性别', dataIndex: 'gender', key: 'gender' },
+    { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: string) => ({ M: '男', F: '女' })[v] || '-' },
     { title: '电话', dataIndex: 'phone', key: 'phone' },
     { title: '责任人', dataIndex: 'is_leader', key: 'is_leader', render: (v: boolean) => v ? '是' : '否' },
   ]
@@ -276,7 +277,7 @@ function AppDetail() {
       const map: Record<string, string> = { cash: '现金', bank_transfer: '银行转账', wechat: '微信', alipay: '支付宝' }
       return v ? map[v] || v : '-'
     }},
-    { title: '时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => formatDateTime(v) },
   ]
 
   const refundColumns = [
@@ -540,7 +541,6 @@ function AppDetail() {
                           <Select placeholder="性别" allowClear style={{ width: 80 }} options={[
                             { label: '男', value: 'M' },
                             { label: '女', value: 'F' },
-                            { label: '其他', value: 'O' },
                           ]} />
                         </Form.Item>
                         <Form.Item name={[name, 'phone']}>
