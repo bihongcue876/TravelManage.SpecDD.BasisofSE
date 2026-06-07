@@ -5,25 +5,33 @@
 ### 后端依赖
 
 - **Python**: 3.14+
-- **数据库**: PostgreSQL
+- **数据库**: PostgreSQL（连接驱动使用 psycopg v3）
 - **包管理**: uv
 
-#### 数据库配置
+#### `.env` 配置
 
-1. 确保 PostgreSQL 服务已启动
-2. 创建数据库 `travel_management`（如果不存在）：
-   ```bash
-   cd backend
-   uv run python -c "import psycopg2; conn = psycopg2.connect(host='localhost', user='postgres', password='你的密码', dbname='postgres'); conn.set_session(autocommit=True); cur = conn.cursor(); cur.execute('CREATE DATABASE travel_management'); print('Done'); conn.close()"
-   ```
-   > 将命令中的 `你的密码` 替换为你的 PostgreSQL 密码
-3. 在 `backend/` 目录下创建 `.env` 文件（参考 `.env.example`）：
-   ```bash
-   cp backend/.env.example backend/.env
-   ```
-   然后编辑 `.env`，填入你的数据库密码
+复制 `backend/.env.example` 为 `backend/.env`，把里面的密码改成你的 PostgreSQL 密码。`.env` 已被 `.gitignore` 忽略，不会提交。
 
-> 注意：`.env` 文件已被 `.gitignore` 忽略，不会被提交到版本库
+#### 数据库初始化
+
+确保 PostgreSQL 服务运行后，创建业务数据库：
+
+```bash
+cd backend
+uv run python -c "
+import psycopg
+conn = psycopg.connect(host='localhost', user='postgres', password='你的密码', dbname='postgres', autocommit=True)
+cur = conn.cursor()
+cur.execute('SELECT 1 FROM pg_database WHERE datname = %s', ('travel_management',))
+if not cur.fetchone():
+    cur.execute('CREATE DATABASE travel_management ENCODING UTF8')
+    print('数据库已创建')
+else:
+    print('数据库已存在')
+conn.close()
+"
+```
+> 将命令中的 `你的密码` 替换为实际密码
 
 ### 前端依赖
 
@@ -52,7 +60,25 @@ pnpm dev
 安装：`pnpm install`
 启动：`pnpm dev`
 
-### 测试
+> 前端运行在 `http://localhost:5173`，首次访问会自动跳转登录页。
+
+---
+
+## 默认账户
+
+系统启动后自动创建以下测试账户：
+
+| 用户名 | 密码 | 角色 | 功能范围 |
+|--------|------|------|----------|
+| `admin` | `admin123` | 系统管理员 | 所有模块：管理路线/旅游团、催款报表、用户管理、退款审批 |
+| `frontdesk` | `123456` | 前台员工 | 旅游团查询、创建申请、支付订金/尾款、录入参加者 |
+| `finance` | `123456` | 财务人员 | 催款清单、财务流水、导出报表、催款提醒、审批退款 |
+
+> 首次登录建议使用 `admin` / `admin123`，然后在「用户管理」中创建其他角色账户。
+
+---
+
+## 测试
 
 项目使用 BDD（行为驱动开发）测试框架 pytest-bdd，所有测试位于 `backend/tests/` 目录。
 
