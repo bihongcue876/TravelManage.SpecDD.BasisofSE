@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -20,5 +21,11 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'antd', 'axios', 'dayjs']
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './vitest-setup.ts',
+    css: false,
   }
 })
