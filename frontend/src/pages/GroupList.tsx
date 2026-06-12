@@ -86,14 +86,14 @@ function GroupList() {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <Tag color="#0F5B5C" style={{ fontSize: 13, padding: '2px 10px' }}>{group.code}</Tag>
+                      <Tag color="#0958d9" style={{ fontSize: 13, padding: '2px 10px' }}>{group.code}</Tag>
                       <Tag color={avail > 0 ? 'success' : 'error'}>
                         余 {avail} 席
                       </Tag>
                     </div>
 
                     <div style={{ marginBottom: 8, color: '#666', fontSize: 13 }}>
-                      <CalendarOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+                      <CalendarOutlined style={{ marginRight: 6, color: '#0958d9' }} />
                       {formatDate(group.departure_date)} 出发
                     </div>
 
@@ -103,15 +103,15 @@ function GroupList() {
 
                     <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
                       <div>
-                        <DollarOutlined style={{ color: '#0F5B5C', marginRight: 4 }} />
+                        <DollarOutlined style={{ color: '#0958d9', marginRight: 4 }} />
                         <span style={{ fontSize: 12, color: '#999' }}>成人</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: '#0F5B5C', marginLeft: 4 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: '#0958d9', marginLeft: 4 }}>
                           {group.adult_price !== null ? `¥${group.adult_price}` : '-'}
                         </span>
                       </div>
                       <div>
                         <span style={{ fontSize: 12, color: '#999' }}>儿童</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: '#0F5B5C', marginLeft: 4 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: '#0958d9', marginLeft: 4 }}>
                           {group.child_price !== null ? `¥${group.child_price}` : '-'}
                         </span>
                       </div>

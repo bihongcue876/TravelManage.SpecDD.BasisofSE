@@ -42,7 +42,7 @@ const roleNameMap: Record<string, string> = {
 }
 
 const roleColorMap: Record<string, string> = {
-  admin: '#0F5B5C',
+  admin: '#0958d9',
   frontdesk: '#1677ff',
   finance: '#52c41a',
 }
@@ -119,7 +119,7 @@ function AppLayout() {
       }}>
         <div
           style={{
-            color: '#0F5B5C',
+            color: '#0958d9',
             fontSize: 18,
             fontWeight: 700,
             marginRight: 32,
@@ -143,7 +143,7 @@ function AppLayout() {
           </Tag>
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#0F5B5C' }} />
+              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#0958d9' }} />
               <span style={{ color: '#333', fontSize: 14 }}>{user?.name || user?.username}</span>
             </Space>
           </Dropdown>
@@ -189,7 +189,7 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#0F5B5C',
+          colorPrimary: '#0958d9',
           borderRadius: 8,
           colorBgContainer: '#ffffff',
           boxShadow: '0 1px 6px rgba(0,0,0,0.08)',

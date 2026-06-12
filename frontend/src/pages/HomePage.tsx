@@ -103,7 +103,7 @@ function HomePage() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 24 }}>
-        <GlobalOutlined style={{ fontSize: 64, color: '#0F5B5C', marginBottom: 16 }} />
+        <GlobalOutlined style={{ fontSize: 64, color: '#0958d9', marginBottom: 16 }} />
         <Title level={2}>欢迎使用旅游业务管理系统</Title>
         <Paragraph style={{ fontSize: 16, color: '#666' }}>
           {user?.name} · {user?.role === 'admin' ? '系统管理员' :
@@ -123,14 +123,14 @@ function HomePage() {
       <Row gutter={[24, 24]}>
         <Col xs={24} sm={12} md={6}>
           <Card hoverable onClick={() => navigate('/groups')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-            <TeamOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+            <TeamOutlined style={{ fontSize: 36, color: '#0958d9' }} />
             <div style={{ marginTop: 8 }}>旅游团查询</div>
           </Card>
         </Col>
         {(hasRole('finance', 'admin')) && (
           <Col xs={24} sm={12} md={6}>
             <Card hoverable onClick={() => navigate('/admin/tasks')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-              <DollarOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+              <DollarOutlined style={{ fontSize: 36, color: '#0958d9' }} />
               <div style={{ marginTop: 8 }}>催款与报表</div>
             </Card>
           </Col>
@@ -139,13 +139,13 @@ function HomePage() {
           <>
             <Col xs={24} sm={12} md={6}>
               <Card hoverable onClick={() => navigate('/admin/routes')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-                <SettingOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+                <SettingOutlined style={{ fontSize: 36, color: '#0958d9' }} />
                 <div style={{ marginTop: 8 }}>管理路线</div>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Card hoverable onClick={() => navigate('/admin/groups')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-                <AppstoreOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+                <AppstoreOutlined style={{ fontSize: 36, color: '#0958d9' }} />
                 <div style={{ marginTop: 8 }}>管理旅游团</div>
               </Card>
             </Col>
@@ -153,20 +153,20 @@ function HomePage() {
         )}
         <Col xs={24} sm={12} md={6}>
           <Card hoverable onClick={() => navigate('/help')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-            <QuestionCircleOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+            <QuestionCircleOutlined style={{ fontSize: 36, color: '#0958d9' }} />
             <div style={{ marginTop: 8 }}>使用帮助</div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card hoverable onClick={() => navigate('/user/profile')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-            <UserAddOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+            <UserAddOutlined style={{ fontSize: 36, color: '#0958d9' }} />
             <div style={{ marginTop: 8 }}>个人中心</div>
           </Card>
         </Col>
         {hasRole('admin') && (
           <Col xs={24} sm={12} md={6}>
             <Card hoverable onClick={() => navigate('/admin/users')} style={{ borderRadius: 8, textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-              <TeamOutlined style={{ fontSize: 36, color: '#0F5B5C' }} />
+              <TeamOutlined style={{ fontSize: 36, color: '#0958d9' }} />
               <div style={{ marginTop: 8 }}>用户管理</div>
             </Card>
           </Col>
