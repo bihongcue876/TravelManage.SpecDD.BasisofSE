@@ -1,17 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, Typography, Space, Tag } from 'antd'
+import { Form, Input, Button, Card, Typography } from 'antd'
 import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons'
 import { useAuth } from '../auth'
 import { App as AntApp } from 'antd'
 
 const { Title, Text } = Typography
-
-const presetAccounts = [
-  { username: 'admin', password: 'admin123', role: '管理员', color: 'red' },
-  { username: 'frontdesk', password: '123456', role: '前台', color: 'blue' },
-  { username: 'finance', password: '123456', role: '财务', color: 'green' },
-]
 
 function Login() {
   const navigate = useNavigate()
@@ -37,10 +31,6 @@ function Login() {
     }
   }
 
-  const handlePresetClick = (account: typeof presetAccounts[0]) => {
-    form.setFieldsValue({ username: account.username, password: account.password })
-  }
-
   return (
     <div
       style={{
@@ -48,12 +38,12 @@ function Login() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        background: 'linear-gradient(135deg, #0F5B5C 0%, #1a8a8b 100%)',
+        background: 'linear-gradient(135deg, #0958d9 0%, #4096ff 100%)',
       }}
     >
       <Card style={{ width: 440, borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <GlobalOutlined style={{ fontSize: 48, color: '#0F5B5C', marginBottom: 16 }} />
+          <GlobalOutlined style={{ fontSize: 48, color: '#0958d9', marginBottom: 16 }} />
           <Title level={3} style={{ marginBottom: 4 }}>旅游业务管理系统</Title>
           <Text type="secondary">请登录您的账户</Text>
         </div>
@@ -93,24 +83,6 @@ function Login() {
             </Button>
           </Form.Item>
         </Form>
-
-        <div style={{ marginTop: 8 }}>
-          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-            快捷登录（点击自动填充）
-          </Text>
-          <Space wrap>
-            {presetAccounts.map(account => (
-              <Tag
-                key={account.username}
-                color={account.color}
-                style={{ cursor: 'pointer', fontSize: 13, padding: '4px 12px' }}
-                onClick={() => handlePresetClick(account)}
-              >
-                {account.role}: {account.username}
-              </Tag>
-            ))}
-          </Space>
-        </div>
       </Card>
     </div>
   )

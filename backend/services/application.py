@@ -314,7 +314,7 @@ def approve_refund(db: Session, refund_id: int, approved: bool, approved_by: str
         raise ValueError("Refund is not in pending state")
 
     if approved:
-        refund.status = "approved"
+        refund.status = "completed"
         refund.approved_by = approved_by
         refund.approved_at = datetime.now()
     else:

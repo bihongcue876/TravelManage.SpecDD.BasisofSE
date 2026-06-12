@@ -175,7 +175,11 @@ draft ──(取消)──→ cancelled
 | approved_at | DateTime, nullable | 审核时间 |
 | refunded_at | DateTime | 退款时间 |
 
-> **退款 >= 5000 元需审核（finance/admin 角色），< 5000 元自动通过。**
+> **退款审批流程：**
+> - 退款 < 5000 元：自动通过，status 直接设为 `completed`
+> - 退款 >= 5000 元：初始为 `pending`，需 admin/finance 审批
+>   - **批准** → status 变为 `completed`
+>   - **拒绝** → status 变为 `rejected`
 
 ### 2.10 催款记录 (reminder_logs)
 
@@ -405,7 +409,7 @@ draft ──(取消)──→ cancelled
 - 已付总额 = 已付订金 + 已付尾款
 - 退款金额 = 已付总额 - (已付总额 × 比例)
 - 部分取消：按取消人数比例计算退款，同样适用手续费率。
-- **退款 >= 5000 元需审核**（admin/finance 审批）。
+- **退款 >= 5000 元需审核**（admin/finance 审批），批准后直接完成。
 
 ### 5.4 名额控制
 - 付订金时检查：团内非取消申请总人数 + 当前申请人数 ≤ `max_pax`

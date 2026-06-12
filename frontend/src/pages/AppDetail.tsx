@@ -323,7 +323,7 @@ function AppDetail() {
       return v ? map[v] || v : '-'
     }},
     { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => {
-      const colorMap: Record<string, string> = { pending: 'warning', approved: 'success', rejected: 'error', completed: 'default' }
+      const colorMap: Record<string, string> = { pending: 'warning', approved: 'success', rejected: 'error', completed: 'success' }
       const textMap: Record<string, string> = { pending: '待审批', approved: '已批准', rejected: '已拒绝', completed: '已完成' }
       return <Tag color={colorMap[v]}>{textMap[v] || v}</Tag>
     }},
@@ -540,18 +540,18 @@ function AppDetail() {
             style={{ borderRadius: 8, marginBottom: 16 }}
           >
             <div style={{ marginBottom: 12 }}>
-              <Tag color="#0F5B5C" style={{ fontSize: 13, padding: '2px 10px' }}>{application.group?.code}</Tag>
+              <Tag color="#0958d9" style={{ fontSize: 13, padding: '2px 10px' }}>{application.group?.code}</Tag>
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <CalendarOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              <CalendarOutlined style={{ marginRight: 6, color: '#0958d9' }} />
               出发：{application.group?.departure_date}
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <UserOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              <UserOutlined style={{ marginRight: 6, color: '#0958d9' }} />
               申请人：{application.name}
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <PhoneOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              <PhoneOutlined style={{ marginRight: 6, color: '#0958d9' }} />
               电话：{application.phone}
             </div>
             <Divider style={{ margin: '12px 0' }} />
