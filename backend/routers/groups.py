@@ -2,6 +2,7 @@ from typing import List, Optional
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 
 from database import get_db
 from models import Group, Route, Application, AppState
@@ -35,7 +36,36 @@ def list_groups(
         query = query.filter(Group.departure_date <= departure_to)
 
     groups = query.order_by(Group.departure_date).all()
-    return groups
+
+    occupied_map = dict(
+        db.query(
+            Application.group_id,
+            func.sum(Application.adults + Application.children)
+        ).filter(
+            Application.state != AppState.CANCELLED
+        ).group_by(Application.group_id).all()
+    )
+
+    result = []
+    for g in groups:
+        occupied = int(occupied_map.get(g.id, 0))
+        g_dict = {
+            "id": g.id,
+            "route_id": g.route_id,
+            "code": g.code,
+            "departure_date": g.departure_date,
+            "deadline": g.deadline,
+            "max_pax": g.max_pax,
+            "adult_price": g.adult_price,
+            "child_price": g.child_price,
+            "is_published": g.is_published,
+            "created_at": g.created_at,
+            "occupied": occupied,
+            "available": g.max_pax - occupied,
+        }
+        result.append(g_dict)
+
+    return result
 
 
 @router.get("/template")

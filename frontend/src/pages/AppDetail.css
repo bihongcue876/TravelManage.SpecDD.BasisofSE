@@ -1,8 +1,20 @@
 .detail-container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .detail-info {
   margin-bottom: 16px;
+}
+
+.detail-left-col {
+  min-width: 0;
+}
+
+.detail-right-col {
+  min-width: 0;
+}
+
+.detail-action-card .ant-card-body {
+  padding: 16px 20px;
 }

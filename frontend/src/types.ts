@@ -18,6 +18,8 @@ export interface Group {
   child_price: number | null
   is_published: boolean
   created_at: string
+  occupied: number
+  available: number
 }
 
 export interface GroupDetail extends Group {

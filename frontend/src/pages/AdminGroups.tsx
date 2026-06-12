@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Space, Modal, Form, Input, InputNumber, DatePicker, message, Upload, Select } from 'antd'
+import { Table, Button, Space, Modal, Form, Input, InputNumber, DatePicker, message, Upload, Select, Tag } from 'antd'
 import { PlusOutlined, EditOutlined, CheckOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
@@ -125,7 +125,10 @@ function AdminGroups() {
     { title: '路线', dataIndex: 'route_id', render: (id: number) => routes.find((r: Route) => r.id === id)?.name || id },
     { title: '截止日期', dataIndex: 'deadline', render: (v: string) => formatDate(v) },
     { title: '出发日期', dataIndex: 'departure_date', render: (v: string) => formatDate(v) },
-    { title: '名额', dataIndex: 'max_pax' },
+    { title: '名额', dataIndex: 'max_pax', render: (_: number, record: Group) => {
+      const avail = record.available ?? (record.max_pax - (record.occupied ?? 0))
+      return <span><Tag color={avail > 0 ? 'green' : 'red'}>{avail}</Tag> / {record.max_pax}</span>
+    }},
     { title: '成人价', dataIndex: 'adult_price', render: (v: number | null) => v !== null ? `¥${v}` : '-' },
     { title: '儿童价', dataIndex: 'child_price', render: (v: number | null) => v !== null ? `¥${v}` : '-' },
     {

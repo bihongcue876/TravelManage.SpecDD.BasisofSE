@@ -37,7 +37,7 @@ function UserProfile() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 24 }}>
-        <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff', marginBottom: 16 }} />
+        <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: '#0F5B5C', marginBottom: 16 }} />
         <Title level={3}>{user.name}</Title>
         <Paragraph style={{ color: '#666' }}>
           {user.username} · <Tag color={currentRole?.color}>{currentRole?.label || user.role}</Tag>

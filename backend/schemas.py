@@ -58,6 +58,8 @@ class GroupResponse(GroupBase):
     id: int
     is_published: bool
     created_at: datetime
+    occupied: int = 0
+    available: int = 0
 
 
 class GroupDetailResponse(GroupResponse):

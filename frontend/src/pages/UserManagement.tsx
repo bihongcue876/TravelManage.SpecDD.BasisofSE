@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Table, Button, Space, Modal, Form, Input, Select, Tag, App } from 'antd'
-import { PlusOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, StopOutlined, KeyOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { fetchUsers, createUser, updateUser, deactivateUser } from '../api'
+import { fetchUsers, createUser, updateUser, deactivateUser, resetPassword } from '../api'
 
 const roleOptions = [
   { label: '系统管理员', value: 'admin' },
@@ -28,7 +28,11 @@ function UserManagement() {
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [resetModalVisible, setResetModalVisible] = useState(false)
+  const [resetUserId, setResetUserId] = useState<number | null>(null)
+  const [resetUserName, setResetUserName] = useState('')
   const [form] = Form.useForm()
+  const [resetForm] = Form.useForm()
 
   const loadUsers = async () => {
     setLoading(true)
@@ -62,6 +66,26 @@ function UserManagement() {
       message.success('用户已停用')
       loadUsers()
     } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
+  const handleResetPassword = (record: any) => {
+    setResetUserId(record.id)
+    setResetUserName(record.name || record.username)
+    resetForm.resetFields()
+    setResetModalVisible(true)
+  }
+
+  const handleResetSubmit = async () => {
+    try {
+      const values = await resetForm.validateFields()
+      if (!resetUserId) return
+      await resetPassword(resetUserId, { new_password: values.new_password })
+      message.success('密码重置成功')
+      setResetModalVisible(false)
+    } catch (error) {
+      if ((error as any).errorFields) return
       message.error((error as Error).message)
     }
   }
@@ -105,6 +129,9 @@ function UserManagement() {
       render: (_: unknown, record: any) => (
         <Space>
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button size="small" icon={<KeyOutlined />} onClick={() => handleResetPassword(record)}>
+            重置密码
+          </Button>
           {record.is_active && (
             <Button size="small" danger icon={<StopOutlined />} onClick={() => handleDeactivate(record.id)}>
               停用
@@ -170,6 +197,46 @@ function UserManagement() {
           </Form.Item>
           <Form.Item name="phone" label="电话">
             <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`重置密码 - ${resetUserName}`}
+        open={resetModalVisible}
+        onOk={handleResetSubmit}
+        onCancel={() => setResetModalVisible(false)}
+        width={420}
+        okText="确认重置"
+      >
+        <Form form={resetForm} layout="vertical">
+          <Form.Item
+            name="new_password"
+            label="新密码"
+            rules={[
+              { required: true, message: '请输入新密码' },
+              { min: 4, message: '密码至少4位' },
+            ]}
+          >
+            <Input.Password placeholder="请输入新密码" />
+          </Form.Item>
+          <Form.Item
+            name="confirm_password"
+            label="确认新密码"
+            dependencies={['new_password']}
+            rules={[
+              { required: true, message: '请确认新密码' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('new_password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('两次输入的密码不一致'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="请再次输入新密码" />
           </Form.Item>
         </Form>
       </Modal>

@@ -73,6 +73,10 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=4)
 
 
+class ResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=4)
+
+
 # ── 认证端点 ──
 
 
@@ -190,6 +194,21 @@ def update_user(
     db.commit()
     db.refresh(user)
     return user
+
+
+@users_router.put("/{user_id}/reset-password")
+def reset_password(
+    user_id: int,
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("admin")),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.password_hash = hash_password(data.new_password)
+    db.commit()
+    return {"message": "密码重置成功"}
 
 
 @users_router.delete("/{user_id}", status_code=204)

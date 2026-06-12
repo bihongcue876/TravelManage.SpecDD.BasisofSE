@@ -19,6 +19,7 @@ from schemas import (
 )
 from services import application as app_service
 from services.pricing import calc_balance_deadline
+from services.pdf_generator import generate_confirmation_pdf, generate_payment_notice_pdf
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -352,5 +353,33 @@ def generate_order_no(
     try:
         order = app_service.generate_payment_order_no(db, application_id, order_type)
         return order
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{application_id}/confirmation-pdf")
+def download_confirmation_pdf(application_id: int, db: Session = Depends(get_db)):
+    from fastapi.responses import Response
+    try:
+        pdf_bytes = generate_confirmation_pdf(db, application_id)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=confirmation_{application_id}.pdf"}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{application_id}/payment-notice-pdf")
+def download_payment_notice_pdf(application_id: int, db: Session = Depends(get_db)):
+    from fastapi.responses import Response
+    try:
+        pdf_bytes = generate_payment_notice_pdf(db, application_id)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=payment_notice_{application_id}.pdf"}
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

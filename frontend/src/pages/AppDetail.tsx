@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card, Steps, Button, Table, Modal, Form, InputNumber, Input, Select,
   message, Alert, Space, Popconfirm, Upload, Descriptions, Tag, Tabs,
-  Timeline, Statistic, Row, Col
+  Timeline, Statistic, Row, Col, Divider
 } from 'antd'
 import {
   UploadOutlined, DollarOutlined, FileTextOutlined,
-  WarningOutlined, ClockCircleOutlined
+  WarningOutlined, ClockCircleOutlined, FilePdfOutlined,
+  CheckCircleOutlined, UserOutlined, PhoneOutlined,
+  CalendarOutlined, TeamOutlined
 } from '@ant-design/icons'
 import type { UploadFile } from 'antd'
 import { Checkbox } from 'antd'
@@ -15,7 +17,8 @@ import {
   fetchApplication, payDeposit, payBalance, addParticipants,
   cancelApplication, getCancelPreview, fetchRemainingBalance,
   fetchPaymentLogs, fetchRefunds, approveRefund, fetchReminderLogs,
-  generateOrderNo, partialCancelApplication, checkDuplicateParticipants
+  generateOrderNo, partialCancelApplication, checkDuplicateParticipants,
+  downloadConfirmationPdf, downloadPaymentNoticePdf
 } from '../api'
 import type {
   ApplicationDetail, CancelPreview, ParticipantCreate,
@@ -241,6 +244,38 @@ function AppDetail() {
     }
   }
 
+  const handleDownloadConfirmation = async () => {
+    if (!id) return
+    try {
+      const blob = await downloadConfirmationPdf(parseInt(id))
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `旅行确认书_${id}.pdf`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success('旅行确认书已下载')
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
+  const handleDownloadPaymentNotice = async () => {
+    if (!id) return
+    try {
+      const blob = await downloadPaymentNoticePdf(parseInt(id))
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `余额缴款单_${id}.pdf`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      message.success('余额缴款单已下载')
+    } catch (error) {
+      message.error((error as Error).message)
+    }
+  }
+
   const handleDuplicateCheck = async (phone?: string) => {
     if (!id || !phone) return
     try {
@@ -267,7 +302,7 @@ function AppDetail() {
     { title: '姓名', dataIndex: 'name', key: 'name' },
     { title: '性别', dataIndex: 'gender', key: 'gender', render: (v: string) => ({ M: '男', F: '女' })[v] || '-' },
     { title: '电话', dataIndex: 'phone', key: 'phone' },
-    { title: '责任人', dataIndex: 'is_leader', key: 'is_leader', render: (v: boolean) => v ? '是' : '否' },
+    { title: '责任人', dataIndex: 'is_leader', key: 'is_leader', render: (v: boolean) => v ? <Tag color="blue">是</Tag> : '否' },
   ]
 
   const paymentLogColumns = [
@@ -387,23 +422,82 @@ function AppDetail() {
     },
   ]
 
+  const renderActionCard = () => {
+    if (application.state === 'cancelled') return null
+    return (
+      <Card
+        title={<span style={{ fontWeight: 600 }}>操作</span>}
+        className="detail-action-card"
+        style={{ borderRadius: 8, marginBottom: 16 }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+          {application.state === 'draft' && (
+            <Button type="primary" block icon={<DollarOutlined />} onClick={handlePayDeposit}>
+              支付订金
+            </Button>
+          )}
+
+          {application.state === 'deposit_paid' && !application.info_completed && (
+            <Button type="primary" block icon={<TeamOutlined />} onClick={handleAddParticipants}>
+              录入参加者信息
+            </Button>
+          )}
+
+          {application.info_completed && balance > 0 && (
+            <>
+              <Button type="primary" block icon={<DollarOutlined />} onClick={handlePayBalance}>
+                支付尾款
+              </Button>
+              <Button block icon={<FilePdfOutlined />} onClick={handleDownloadPaymentNotice}>
+                下载余额缴款单
+              </Button>
+              <Button block icon={<FilePdfOutlined />} onClick={handleDownloadConfirmation}>
+                下载旅行确认书
+              </Button>
+            </>
+          )}
+
+          {application.info_completed && balance <= 0 && (
+            <Button type="primary" block icon={<FilePdfOutlined />} onClick={handleDownloadConfirmation}>
+              下载旅行确认书
+            </Button>
+          )}
+
+          <Divider style={{ margin: '4px 0' }} />
+
+          <Popconfirm
+            title="确定要取消此申请吗？"
+            onConfirm={handleCancelPreview}
+          >
+            <Button danger block>取消申请</Button>
+          </Popconfirm>
+          {application.participants && application.participants.length > 1 && (
+            <Button danger block onClick={() => setPartialCancelVisible(true)}>
+              部分取消
+            </Button>
+          )}
+        </Space>
+      </Card>
+    )
+  }
+
   return (
     <div className="detail-container">
-      <Card title="申请详情" style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16, borderRadius: 8 }}>
         <Steps
           current={currentStep}
           items={[
-            { title: '创建申请' },
-            { title: '支付订金' },
-            { title: '录入参加者' },
-            { title: '支付尾款' },
-            { title: '完成' }
+            { title: '创建申请', icon: currentStep > 0 ? <CheckCircleOutlined /> : undefined },
+            { title: '支付订金', icon: currentStep > 1 ? <CheckCircleOutlined /> : undefined },
+            { title: '录入参加者', icon: currentStep > 2 ? <CheckCircleOutlined /> : undefined },
+            { title: '支付尾款', icon: currentStep > 3 ? <CheckCircleOutlined /> : undefined },
+            { title: '完成', icon: currentStep > 4 ? <CheckCircleOutlined /> : undefined },
           ]}
         />
         <Alert
-          message={`状态：${stateMap[application.state]?.text || application.state}`}
+          message={`当前状态：${stateMap[application.state]?.text || application.state}`}
           type={stateMap[application.state]?.color === 'success' ? 'success' : 'info'}
-          style={{ marginTop: 16 }}
+          style={{ marginTop: 16, borderRadius: 8 }}
         />
       </Card>
 
@@ -419,71 +513,61 @@ function AppDetail() {
           }
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 16, borderRadius: 8 }}
         />
       )}
 
-      <Card style={{ marginBottom: 16 }}>
-        <Tabs items={tabItems} />
-      </Card>
+      <Row gutter={20}>
+        <Col xs={24} lg={16} className="detail-left-col">
+          <Card style={{ marginBottom: 16, borderRadius: 8 }}>
+            <Tabs items={tabItems} />
+          </Card>
 
-      {application.state === 'draft' && (
-        <Card title="操作">
-          <Button type="primary" onClick={handlePayDeposit}>
-            支付订金
-          </Button>
-        </Card>
-      )}
+          <Card title="参加者信息" style={{ borderRadius: 8 }}>
+            <Table
+              dataSource={application.participants || []}
+              columns={participantColumns}
+              rowKey="id"
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
 
-      {application.state === 'deposit_paid' && !application.info_completed && (
-        <Card title="操作">
-          <Space>
-            <Button type="primary" onClick={handleAddParticipants}>
-              录入参加者信息
-            </Button>
-          </Space>
-        </Card>
-      )}
+        <Col xs={24} lg={8} className="detail-right-col">
+          <Card
+            title={<span style={{ fontWeight: 600 }}>团信息</span>}
+            style={{ borderRadius: 8, marginBottom: 16 }}
+          >
+            <div style={{ marginBottom: 12 }}>
+              <Tag color="#0F5B5C" style={{ fontSize: 13, padding: '2px 10px' }}>{application.group?.code}</Tag>
+            </div>
+            <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
+              <CalendarOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              出发：{application.group?.departure_date}
+            </div>
+            <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
+              <UserOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              申请人：{application.name}
+            </div>
+            <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
+              <PhoneOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
+              电话：{application.phone}
+            </div>
+            <Divider style={{ margin: '12px 0' }} />
+            <Row gutter={8}>
+              <Col span={12}>
+                <Statistic title="总费用" value={application.total_price} prefix="¥" valueStyle={{ fontSize: 18 }} />
+              </Col>
+              <Col span={12}>
+                <Statistic title="余额" value={balance} prefix="¥" valueStyle={{ fontSize: 18, color: balance > 0 ? '#cf1322' : '#52c41a' }} />
+              </Col>
+            </Row>
+          </Card>
 
-      {application.info_completed && balance > 0 && application.state !== 'cancelled' && (
-        <Card title="操作">
-          <Space>
-            <Button type="primary" onClick={handlePayBalance}>
-              支付尾款
-            </Button>
-            <Button onClick={handleGenerateOrderNo}>
-              生成交款单编号
-            </Button>
-          </Space>
-        </Card>
-      )}
-
-      {application.state !== 'cancelled' && (
-        <Card title="售后操作" style={{ marginTop: 16 }}>
-          <Space>
-            <Popconfirm
-              title="确定要取消此申请吗？"
-              onConfirm={handleCancelPreview}
-            >
-              <Button danger>取消申请</Button>
-            </Popconfirm>
-            {application.participants && application.participants.length > 1 && (
-              <Button danger onClick={() => setPartialCancelVisible(true)}>
-                部分取消
-              </Button>
-            )}
-          </Space>
-        </Card>
-      )}
-
-      <Card title="参加者信息" style={{ marginTop: 16 }}>
-        <Table
-          dataSource={application.participants || []}
-          columns={participantColumns}
-          rowKey="id"
-          pagination={false}
-        />
-      </Card>
+          {renderActionCard()}
+        </Col>
+      </Row>
 
       <Modal
         title={payType === 'deposit' ? '支付订金' : '支付尾款'}

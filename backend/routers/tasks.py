@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Application, Group, PaymentLog, Refund, ReminderLog, BankReconciliation
+from models import Application, Group, Route, Participant, PaymentLog, Refund, ReminderLog, BankReconciliation
 from schemas import (
     DailyReminderResponse, PaymentLogDetailResponse,
     FinanceExportRequest, FinanceReportResponse,
@@ -155,3 +155,96 @@ def get_bank_reconciliation_items(reconciliation_id: int, db: Session = Depends(
         BankReconciliationItem.reconciliation_id == reconciliation_id
     ).all()
     return items
+
+
+@router.get("/bank-reconciliation")
+def list_bank_reconciliations(db: Session = Depends(get_db)):
+    recs = db.query(BankReconciliation).order_by(BankReconciliation.created_at.desc()).limit(20).all()
+    return recs
+
+
+@router.post("/batch-print/pdf")
+def batch_print_pdf(
+    request: BatchPrintRequest,
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import Response
+    from services.pdf_generator import generate_confirmation_pdf, generate_payment_notice_pdf
+    from PyPDF2 import PdfMerger
+    from io import BytesIO
+
+    applications = db.query(Application).filter(Application.id.in_(request.application_ids)).all()
+    if not applications:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="No applications found")
+
+    merger = PdfMerger()
+    for app in applications:
+        try:
+            if request.doc_type == "confirmation":
+                pdf_bytes = generate_confirmation_pdf(db, app.id)
+            else:
+                pdf_bytes = generate_payment_notice_pdf(db, app.id)
+            merger.append(BytesIO(pdf_bytes))
+        except ValueError:
+            continue
+
+    if not merger.pages:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="No PDF documents could be generated")
+
+    output = BytesIO()
+    merger.write(output)
+    merger.close()
+    output.seek(0)
+
+    filename = "confirmations" if request.doc_type == "confirmation" else "payment_notices"
+    return Response(
+        content=output.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=batch_{filename}.pdf"}
+    )
+
+
+@router.post("/bank-reconciliation/import/excel")
+def import_bank_reconciliation_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    import openpyxl
+    from io import BytesIO
+    from decimal import Decimal
+
+    content = file.file.read()
+    try:
+        wb = openpyxl.load_workbook(BytesIO(content))
+    except Exception:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Invalid Excel file")
+
+    ws = wb.active
+    records = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if not row[0]:
+            continue
+        bank_date = row[0] if isinstance(row[0], date) else None
+        if not bank_date and row[0]:
+            from datetime import datetime as dt
+            try:
+                bank_date = dt.strptime(str(row[0]), "%Y-%m-%d").date()
+            except ValueError:
+                bank_date = None
+        amount = float(row[1]) if row[1] else 0
+        ref = str(row[2]) if row[2] else ""
+        records.append({
+            "date": bank_date.isoformat() if bank_date else "",
+            "amount": amount,
+            "reference": ref,
+        })
+
+    if not records:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="No valid records found in Excel")
+
+    reconciliation = export_service.import_bank_statement(db, file.filename, records)
+    return reconciliation

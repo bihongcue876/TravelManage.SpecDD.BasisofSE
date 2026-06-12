@@ -1,5 +1,5 @@
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Layout, Menu, Dropdown, Avatar, Space, Spin, App as AntApp } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Space, Spin, App as AntApp, ConfigProvider, Tag, Button } from 'antd'
 import {
   TeamOutlined,
   AppstoreOutlined,
@@ -10,6 +10,7 @@ import {
   UserOutlined,
   LoginOutlined,
   BankOutlined,
+  LockOutlined,
 } from '@ant-design/icons'
 import { useState, useEffect } from 'react'
 import { useAuth, UserRole } from './auth'
@@ -28,7 +29,6 @@ import './App.css'
 
 const { Header, Content } = Layout
 
-// 菜单权限配置：角色可访问的菜单 key
 const roleMenuMap: Record<UserRole, string[]> = {
   admin: ['/home', '/groups', '/admin/groups', '/admin/routes', '/admin/tasks', '/admin/users'],
   frontdesk: ['/home', '/groups'],
@@ -39,6 +39,12 @@ const roleNameMap: Record<string, string> = {
   admin: '系统管理员',
   frontdesk: '前台员工',
   finance: '财务人员',
+}
+
+const roleColorMap: Record<string, string> = {
+  admin: '#0F5B5C',
+  frontdesk: '#1677ff',
+  finance: '#52c41a',
 }
 
 const allMenuItems = [
@@ -54,7 +60,6 @@ const allMenuItems = [
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth()
 
-  // 监听 auth:logout 事件，当 axios 拦截器清除 token 时强制重渲染
   const [, setLogoutSignal] = useState(0)
   useEffect(() => {
     const handler = () => setLogoutSignal(n => n + 1)
@@ -78,7 +83,6 @@ function AppLayout() {
   const navigate = useNavigate()
   const { user, logout, hasRole } = useAuth()
 
-  // 根据角色过滤可见菜单
   const allowedKeys = user ? roleMenuMap[user.role] || [] : []
   const menuItems = allMenuItems
     .filter(item => allowedKeys.includes(item.key))
@@ -86,11 +90,13 @@ function AppLayout() {
 
   const userMenuItems = [
     { key: 'profile', label: '个人中心', icon: <UserOutlined /> },
+    { key: 'change-password', label: '修改密码', icon: <LockOutlined /> },
     { key: 'logout', label: '退出登录', icon: <LoginOutlined /> },
   ]
 
   const handleUserMenuClick = ({ key }: { key: string }) => {
     if (key === 'profile') navigate('/user/profile')
+    if (key === 'change-password') navigate('/user/profile')
     if (key === 'logout') {
       logout()
       navigate('/login')
@@ -100,32 +106,56 @@ function AppLayout() {
   const selectedKey = location.pathname === '/' ? '/home' : location.pathname
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+      <Header style={{
+        background: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 24px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
         <div
-          style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginRight: 40, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          style={{
+            color: '#0F5B5C',
+            fontSize: 18,
+            fontWeight: 700,
+            marginRight: 32,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            letterSpacing: 1,
+          }}
           onClick={() => navigate('/home')}
         >
           旅游业务管理系统
         </div>
         <Menu
-          theme="dark"
           mode="horizontal"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ flex: 1, minWidth: 0 }}
+          style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
         />
-        <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
-          <Space style={{ cursor: 'pointer', color: 'white' }}>
-            <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#87d068' }} />
-            <span>{user?.name || user?.username}</span>
-            <span style={{ fontSize: 12, opacity: 0.7 }}>
-              {user ? roleNameMap[user.role] || user.role : ''}
-            </span>
-          </Space>
-        </Dropdown>
+        <Space size={12} style={{ marginLeft: 'auto' }}>
+          <Tag color={roleColorMap[user?.role || 'admin']} style={{ margin: 0, fontSize: 12 }}>
+            {user ? roleNameMap[user.role] || user.role : ''}
+          </Tag>
+          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
+            <Space style={{ cursor: 'pointer' }}>
+              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#0F5B5C' }} />
+              <span style={{ color: '#333', fontSize: 14 }}>{user?.name || user?.username}</span>
+            </Space>
+          </Dropdown>
+          <Button
+            type="text"
+            icon={<LoginOutlined />}
+            onClick={() => { logout(); navigate('/login') }}
+            style={{ color: '#999' }}
+          />
+        </Space>
       </Header>
-      <Content style={{ padding: 24, background: '#f5f5f5' }}>
+      <Content style={{ padding: 24, background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/home" element={<HomePage />} />
@@ -156,11 +186,31 @@ function AppLayout() {
 
 function App() {
   return (
-    <AntApp>
-      <ProtectedRoute>
-        <AppLayout />
-      </ProtectedRoute>
-    </AntApp>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#0F5B5C',
+          borderRadius: 8,
+          colorBgContainer: '#ffffff',
+          boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif',
+        },
+        components: {
+          Card: {
+            boxShadowTertiary: '0 1px 6px rgba(0,0,0,0.06)',
+          },
+          Button: {
+            borderRadius: 8,
+          },
+        },
+      }}
+    >
+      <AntApp>
+        <ProtectedRoute>
+          <AppLayout />
+        </ProtectedRoute>
+      </AntApp>
+    </ConfigProvider>
   )
 }
 

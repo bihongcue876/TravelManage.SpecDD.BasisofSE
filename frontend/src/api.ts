@@ -210,6 +210,9 @@ export const fetchFinanceReport = (params: { period: string; start_date: string;
 export const batchPrintDocuments = (data: { application_ids: number[]; doc_type: string }): Promise<{ documents: Record<string, unknown>[]; total_count: number }> =>
   api.post('/tasks/batch-print', data)
 
+export const batchPrintPdf = (data: { application_ids: number[]; doc_type: string }): Promise<Blob> =>
+  api.post('/tasks/batch-print/pdf', data, { responseType: 'blob' })
+
 export const sendReminder = (params: { application_id: number; reminder_type: string }): Promise<{ id: number; reminder_type: string; sent_at: string }> =>
   api.post('/tasks/send-reminder', null, { params })
 
@@ -226,6 +229,17 @@ export const importBankReconciliation = (file: File): Promise<BankReconciliation
 
 export const fetchBankReconciliation = (id: number): Promise<BankReconciliation> =>
   api.get(`/tasks/bank-reconciliation/${id}`)
+
+export const fetchBankReconciliationList = (): Promise<BankReconciliation[]> =>
+  api.get('/tasks/bank-reconciliation')
+
+export const importBankReconciliationExcel = (file: File): Promise<BankReconciliation> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/tasks/bank-reconciliation/import/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
 
 export const fetchBankReconciliationItems = (id: number): Promise<BankReconciliationItem[]> =>
   api.get(`/tasks/bank-reconciliation/${id}/items`)
@@ -246,6 +260,9 @@ export const createUser = (data: any): Promise<any> => api.post('/users', data)
 export const updateUser = (id: number, data: any): Promise<any> => api.put(`/users/${id}`, data)
 
 export const deactivateUser = (id: number): Promise<void> => api.delete(`/users/${id}`)
+
+export const resetPassword = (id: number, data: { new_password: string }): Promise<{ message: string }> =>
+  api.put(`/users/${id}/reset-password`, data)
 
 // ── 仪表盘 ──
 
@@ -273,6 +290,12 @@ export const fetchRouteHistory = (id: number): Promise<any[]> =>
 
 export const changePassword = (data: { old_password: string; new_password: string }): Promise<{ message: string }> =>
   api.put('/auth/change-password', data)
+
+export const downloadConfirmationPdf = (id: number): Promise<Blob> =>
+  api.get(`/applications/${id}/confirmation-pdf`, { responseType: 'blob' })
+
+export const downloadPaymentNoticePdf = (id: number): Promise<Blob> =>
+  api.get(`/applications/${id}/payment-notice-pdf`, { responseType: 'blob' })
 
 // ── 获取预设用户列表 ──
 

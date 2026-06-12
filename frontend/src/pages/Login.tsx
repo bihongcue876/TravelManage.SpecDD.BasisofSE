@@ -1,18 +1,25 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Typography } from 'antd'
+import { Form, Input, Button, Card, Typography, Space, Tag } from 'antd'
 import { UserOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons'
 import { useAuth } from '../auth'
+import { App as AntApp } from 'antd'
 
 const { Title, Text } = Typography
+
+const presetAccounts = [
+  { username: 'admin', password: 'admin123', role: '管理员', color: 'red' },
+  { username: 'frontdesk', password: '123456', role: '前台', color: 'blue' },
+  { username: 'finance', password: '123456', role: '财务', color: 'green' },
+]
 
 function Login() {
   const navigate = useNavigate()
   const { login, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
+  const { message } = AntApp.useApp()
 
-  // 已登录则直接跳转首页
   if (isAuthenticated) {
     navigate('/home', { replace: true })
   }
@@ -30,6 +37,10 @@ function Login() {
     }
   }
 
+  const handlePresetClick = (account: typeof presetAccounts[0]) => {
+    form.setFieldsValue({ username: account.username, password: account.password })
+  }
+
   return (
     <div
       style={{
@@ -37,12 +48,12 @@ function Login() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #0F5B5C 0%, #1a8a8b 100%)',
       }}
     >
       <Card style={{ width: 440, borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <GlobalOutlined style={{ fontSize: 48, color: '#1677ff', marginBottom: 16 }} />
+          <GlobalOutlined style={{ fontSize: 48, color: '#0F5B5C', marginBottom: 16 }} />
           <Title level={3} style={{ marginBottom: 4 }}>旅游业务管理系统</Title>
           <Text type="secondary">请登录您的账户</Text>
         </div>
@@ -83,8 +94,22 @@ function Login() {
           </Form.Item>
         </Form>
 
-        <div style={{ textAlign: 'center', color: '#999', fontSize: 12 }}>
-          <Text type="secondary">点击上方预设用户可自动填充账号密码</Text>
+        <div style={{ marginTop: 8 }}>
+          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            快捷登录（点击自动填充）
+          </Text>
+          <Space wrap>
+            {presetAccounts.map(account => (
+              <Tag
+                key={account.username}
+                color={account.color}
+                style={{ cursor: 'pointer', fontSize: 13, padding: '4px 12px' }}
+                onClick={() => handlePresetClick(account)}
+              >
+                {account.role}: {account.username}
+              </Tag>
+            ))}
+          </Space>
         </div>
       </Card>
     </div>
