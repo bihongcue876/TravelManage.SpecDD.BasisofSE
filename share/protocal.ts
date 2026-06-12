@@ -2,8 +2,9 @@
  * 旅游业务管理系统 - 接口协议定义 v2.2
  * 对应后端 API (FastAPI + SQLAlchemy)
  * 用途: 前端 TypeScript 类型安全 + 路径统一管理
- * 
- * 变更：角色体系由旧四角色调整为三角色（admin / frontdesk / finance）
+ *
+ * 角色体系：三角色 (admin / frontdesk / finance)
+ * 前端页面路由见 App.tsx，后端 API 路由见 main.py
  */
 
 // ───────────────────── 基础类型 ─────────────────────
@@ -69,22 +70,48 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+/** 管理员重置用户密码 */
+export interface ResetPasswordRequest {
+  new_password: string;
+}
+
+/** 预设用户（登录页快捷填充用） */
+export interface PredefinedUser {
+  username: string;
+  name: string;
+  role: Role;
+  default_password: string;
+}
+
 // ───────────────────── 工作台（角色化仪表盘）─────────────────────
-// 建议后端提供统一 /api/dashboard 接口，根据当前登录用户的角色返回不同数据
-export interface DashboardResponse {
-  /** 管理员仪表盘 */
-  total_users?: number;
-  total_applications?: number;
-  today_income?: number;
-  pending_refunds?: number;
-  /** 前台仪表盘 */
-  new_applications_today?: number;
-  pending_participants?: number;
-  /** 财务仪表盘 */
-  yesterday_income?: number;
-  yesterday_exports?: number;
-  pending_approvals?: number;
-  // 具体字段以后端实际返回为准
+// 按角色分开的 5 个端点，非统一接口
+
+export interface FrontdeskDashboard {
+  new_applications_today: number;
+  pending_participants: number;
+}
+
+export interface CollectorDashboard {
+  reminders_today: number;
+  overdue_balance: number;
+}
+
+export interface ProductDashboard {
+  upcoming_groups: number;
+  unpublished_groups: number;
+}
+
+export interface FinanceDashboard {
+  yesterday_income: number;
+  yesterday_exports: number;
+  pending_refunds: number;
+}
+
+export interface AdminDashboard {
+  total_users: number;
+  total_applications: number;
+  today_income: number;
+  pending_refunds: number;
 }
 
 // ───────────────────── 路线 ─────────────────────
@@ -110,6 +137,22 @@ export interface RouteUpdateRequest {
   is_active?: boolean;
 }
 
+export interface RouteHistoryResponse {
+  id: number;
+  route_id: number;
+  code: string;
+  name: string;
+  descr: string | null;
+  is_active: boolean;
+  changed_at: DateTimeString;
+}
+
+/** 批量启用/停用请求 */
+export interface RouteBatchUpdateRequest {
+  ids: number[];
+  is_active: boolean;
+}
+
 // ───────────────────── 旅游团 ─────────────────────
 
 export interface GroupResponse {
@@ -123,6 +166,10 @@ export interface GroupResponse {
   child_price: number | null;
   is_published: boolean;
   created_at: DateTimeString;
+  /** 已占名额（非取消申请的 adults+children 总和） */
+  occupied: number;
+  /** 可用名额 */
+  available: number;
 }
 
 export interface GroupDetailResponse extends GroupResponse {
@@ -443,13 +490,19 @@ export const ENDPOINTS = {
   LOGIN: '/api/auth/login',
   ME: '/api/auth/me',
   CHANGE_PASSWORD: '/api/auth/change-password',
+  PREDEFINED_USERS: '/api/auth/predefined-users',
 
   // ---- 用户管理（管理员专用） ----
   USERS: '/api/users',
   USER: (id: number) => `/api/users/${id}`,
+  RESET_PASSWORD: (id: number) => `/api/users/${id}/reset-password`,
 
-  // ---- 工作台（统一接口，后端按角色返回不同数据） ----
-  DASHBOARD: '/api/dashboard',
+  // ---- 工作台（按角色分开 5 个端点） ----
+  FRONTDESK_DASHBOARD: '/api/dashboard/frontdesk',
+  COLLECTOR_DASHBOARD: '/api/dashboard/collector',
+  PRODUCT_DASHBOARD: '/api/dashboard/product',
+  FINANCE_DASHBOARD: '/api/dashboard/finance',
+  ADMIN_DASHBOARD: '/api/dashboard/admin',
 
   // ---- 路线 ----
   LIST_ROUTES: '/api/routes',
@@ -457,11 +510,12 @@ export const ENDPOINTS = {
   GET_ROUTE: (id: number) => `/api/routes/${id}`,
   CREATE_ROUTE: '/api/routes',
   UPDATE_ROUTE: (id: number) => `/api/routes/${id}`,
-  DELETE_ROUTE: (id: number) => `/api/routes/${id}`,   // 实际为停用
+  DELETE_ROUTE: (id: number) => `/api/routes/${id}`,           // 软删除（标记 active=false）
   DELETE_ROUTE_FORCE: (id: number) => `/api/routes/${id}/force`,  // 硬删除（无关联团时可用）
   IMPORT_ROUTES: '/api/routes/import',
   ROUTE_TEMPLATE: '/api/routes/template',
   BATCH_UPDATE_ROUTES: '/api/routes/batch',
+  ROUTE_HISTORY: (id: number) => `/api/routes/${id}/history`,
 
   // ---- 旅游团 ----
   LIST_GROUPS: '/api/groups',
@@ -499,6 +553,8 @@ export const ENDPOINTS = {
   DUPLICATE_CHECK: (appId: number) => `/api/applications/${appId}/duplicate-check`,
   ADD_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
   LIST_PARTICIPANTS: (id: number) => `/api/applications/${id}/participants`,
+  CONFIRMATION_PDF: (id: number) => `/api/applications/${id}/confirmation-pdf`,
+  PAYMENT_NOTICE_PDF: (id: number) => `/api/applications/${id}/payment-notice-pdf`,
 
   // ---- 任务 ----
   DAILY_REMINDERS: '/api/tasks/daily-reminders',
@@ -506,9 +562,12 @@ export const ENDPOINTS = {
   EXPORT_FINANCE: '/api/tasks/daily-finance/export',
   FINANCE_REPORT: '/api/tasks/finance-report',
   BATCH_PRINT: '/api/tasks/batch-print',
+  BATCH_PRINT_PDF: '/api/tasks/batch-print/pdf',
   SEND_REMINDER: '/api/tasks/send-reminder',
   TASK_REMINDER_LOGS: '/api/tasks/reminder-logs',
   BANK_RECONCILIATION_IMPORT: '/api/tasks/bank-reconciliation/import',
+  BANK_RECONCILIATION_IMPORT_EXCEL: '/api/tasks/bank-reconciliation/import/excel',
   BANK_RECONCILIATION: (id: number) => `/api/tasks/bank-reconciliation/${id}`,
   BANK_RECONCILIATION_ITEMS: (id: number) => `/api/tasks/bank-reconciliation/${id}/items`,
+  LIST_BANK_RECONCILIATIONS: '/api/tasks/bank-reconciliation',
 } as const;
