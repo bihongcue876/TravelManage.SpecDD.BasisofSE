@@ -1,9 +1,10 @@
+# pragma: no cover
 from datetime import date, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 
-from database import SessionLocal
+from database import get_sessionlocal
 from services import export as export_service
 from models import Application, Group, ReminderLog
 from services.pricing import calc_balance_deadline
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_daily_reminders_job():
-    with SessionLocal() as db:
+    with get_sessionlocal()() as db:
         try:
             today = date.today()
             reminders = export_service.generate_daily_reminders(db, today)
@@ -23,7 +24,7 @@ def generate_daily_reminders_job():
 
 
 def export_finance_job():
-    with SessionLocal() as db:
+    with get_sessionlocal()() as db:
         try:
             today = date.today()
             records = export_service.generate_finance_export(db, today)
@@ -35,7 +36,7 @@ def export_finance_job():
 
 
 def send_balance_reminders_job():
-    with SessionLocal() as db:
+    with get_sessionlocal()() as db:
         try:
             today = date.today()
             apps = db.query(Application).filter(

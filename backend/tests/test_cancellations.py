@@ -108,7 +108,7 @@ def test_cancel_different_times():
 
 @given('系统中存在旅游团，团ID为 1，出发日期为 "2026-08-20"')
 def group_with_departure_date_default(db):
-    route = Route(id=1, name="测试路线")
+    route = Route(id=1, code="RT0000000001", name="测试路线")
     db.add(route)
     db.commit()
     group = Group(

@@ -118,7 +118,7 @@ def test_payment_flow_integrity():
 
 @given('系统中存在旅游团，团ID为 1')
 def group_exists_payments(db):
-    route = Route(id=1, name="支付测试路线")
+    route = Route(id=1, code="RT0000000001", name="支付测试路线")
     db.add(route)
     db.commit()
     group = Group(

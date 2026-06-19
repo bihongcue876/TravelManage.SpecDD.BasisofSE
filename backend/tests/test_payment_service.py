@@ -128,8 +128,8 @@ class TestPaymentLogs(BaseTest):
         super().setUp()
         self.group = self._seed_group()
         self.app = self._seed_application(
-            state=AppState.DEPOSIT_PAID,
-            paid_deposit=Decimal("600"),
+            state=AppState.DRAFT,
+            paid_deposit=Decimal("0"),
             info_completed=True,
         )
         self._seed_participant()
@@ -148,7 +148,6 @@ class TestPaymentEndpoint(BaseTest):
 
     def setUp(self):
         super().setUp()
-        self._seed_route()
         self._seed_group()
 
     def _create_and_prepare_application(self):
@@ -180,13 +179,13 @@ class TestPaymentEndpoint(BaseTest):
         app_id = self._create_and_prepare_application()
         resp = self.client.post(f"/api/applications/{app_id}/pay-balance", json={"amount": 1000})
         data = self.assertResponseOk(resp)
-        self.assertEqual(data["paid_balance"], 1000)
+        self.assertEqual(data["paid_balance"], "1000.00")
         self.assertEqual(data["state"], "deposit_paid")
 
     def test_http_pay_balance_full(self):
         """HTTP: 支付全部尾款 → confirmed"""
         app_id = self._create_and_prepare_application()
-        resp = self.client.post(f"/api/applications/{app_id}/pay-balance", json={"amount": 4400})
+        resp = self.client.post(f"/api/applications/{app_id}/pay-balance", json={"amount": 4500})
         data = self.assertResponseOk(resp)
         self.assertEqual(data["state"], "confirmed")
 
@@ -203,7 +202,7 @@ class TestPaymentEndpoint(BaseTest):
         app_id = self._create_and_prepare_application()
         resp = self.client.get(f"/api/applications/{app_id}/remaining-balance")
         data = self.assertResponseOk(resp)
-        self.assertEqual(data["remaining"], 4400)
+        self.assertEqual(data["remaining"], "4500.00")
 
 
 if __name__ == "__main__":

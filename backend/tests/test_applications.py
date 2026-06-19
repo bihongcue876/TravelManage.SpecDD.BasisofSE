@@ -121,7 +121,8 @@ def test_update_participant_not_found():
 
 @given(parsers.cfparse('系统中存在旅游路线 "{name}"，路线ID为 {route_id:d}'))
 def route_exists(name, route_id, db):
-    db.add(Route(id=route_id, name=name))
+    code = f"RT{route_id:010d}"
+    db.add(Route(id=route_id, code=code, name=name))
     db.commit()
 
 @given(parsers.cfparse('系统中存在旅游团，团ID为 {group_id:d}，团代码 "{code}"'))

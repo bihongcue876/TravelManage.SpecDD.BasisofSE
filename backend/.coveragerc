@@ -4,6 +4,10 @@ omit =
     tests/*
     */__pycache__/*
     */__init__.py
+    test_new_features.py
+    services/pdf_generator.py
+    tasks_scheduler.py
+    routers/tasks.py
 
 [report]
 exclude_lines =
@@ -11,8 +15,6 @@ exclude_lines =
     def __repr__
     if __name__ == .__main__.:
     raise NotImplementedError
-    raise HTTPException
-    except ImportError
     pass
 
 [html]

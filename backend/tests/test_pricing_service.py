@@ -15,13 +15,18 @@ from unittest.mock import patch
 from services.pricing import calc_deposit, calc_cancel_fee, calc_balance_deadline
 
 
+class _FixedToday:
+    """Python 3.14+: 用模拟类替换模块中的 date 引用，避免直接 patch 内置 C 类型"""
+    @staticmethod
+    def today():
+        return date(2026, 5, 13)
+
+
 class TestCalcDeposit(unittest.TestCase):
     """订金计算测试 — calc_deposit()"""
 
     def setUp(self):
-        # 固定"今天"为 2026-05-13
-        # 注意：在 Python 3.14+ 中不能直接 patch 内置类型，需 patch 模块引用
-        self.today_patcher = patch("services.pricing.date.today", return_value=date(2026, 5, 13))
+        self.today_patcher = patch("services.pricing.date", _FixedToday)
         self.mock_today = self.today_patcher.start()
 
     def tearDown(self):
@@ -99,7 +104,7 @@ class TestCalcCancelFee(unittest.TestCase):
     """取消手续费测试 — calc_cancel_fee()"""
 
     def setUp(self):
-        self.today_patcher = patch("services.pricing.date.today", return_value=date(2026, 5, 13))
+        self.today_patcher = patch("services.pricing.date", _FixedToday)
         self.mock_today = self.today_patcher.start()
 
     def tearDown(self):

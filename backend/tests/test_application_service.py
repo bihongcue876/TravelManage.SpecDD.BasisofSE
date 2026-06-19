@@ -32,14 +32,14 @@ class TestCreateApplication(BaseTest):
 
     def test_create_success_59_days_20_percent(self):
         """30≤D<60 → 订金20%"""
-        group = self._seed_group(departure_date=date.today() + timedelta(days=59))
+        group = self._seed_group(departure_date=date.today() + timedelta(days=59), deadline=date.today() + timedelta(days=30))
         data = ApplicationCreate(group_id=group.id, name="张三", phone="13800138000", adults=2, children=1)
         app = app_service.create_application(self.db, data)
         self.assertEqual(app.deposit, Decimal("1000"))  # 20% of 5000
 
     def test_create_success_29_days_100_percent(self):
         """D<30 → 订金100%"""
-        group = self._seed_group(departure_date=date.today() + timedelta(days=29))
+        group = self._seed_group(departure_date=date.today() + timedelta(days=29), deadline=date.today() + timedelta(days=10))
         data = ApplicationCreate(group_id=group.id, name="张三", phone="13800138000", adults=2, children=1)
         app = app_service.create_application(self.db, data)
         self.assertEqual(app.deposit, Decimal("5000"))  # 100%
@@ -269,7 +269,7 @@ class TestDuplicateCheck(BaseTest):
 
     def setUp(self):
         super().setUp()
-        group1 = self._seed_group(group_id=1)
+        app1 = self._seed_application(app_id=1, group_id=1, name="张三")
         group2 = self._seed_group(group_id=2, code="TEST002")
         app2 = self._seed_application(app_id=2, group_id=2, name="李四")
         self._seed_participant(participant_id=1, application_id=1, phone="13800138000")

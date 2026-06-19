@@ -8,7 +8,7 @@ sys.path.insert(0, ".")
 from datetime import date, timedelta
 from decimal import Decimal
 
-from database import SessionLocal
+from database import get_sessionlocal
 from models import (
     Route, Group, Application, Participant, PaymentLog, PaymentVoucher,
     Refund, ParticipantEditHistory, ReminderLog, PaymentOrder,
@@ -18,7 +18,7 @@ from services import application as app_service
 from services import export as export_service
 from services.pricing import calc_deposit, calc_cancel_fee, calc_balance_deadline
 
-db = SessionLocal()
+db = get_sessionlocal()()
 
 print("=" * 60)
 print("测试新增功能")
@@ -27,7 +27,7 @@ print("=" * 60)
 try:
     # 1. 创建路线
     print("\n1. 创建测试路线...")
-    route = Route(name="测试路线-三亚5日游", descr="三亚海滩度假", is_active=True)
+    route = Route(name="测试路线-三亚5日游", code="RT0000000001", descr="三亚海滩度假", is_active=True)
     db.add(route)
     db.commit()
     db.refresh(route)

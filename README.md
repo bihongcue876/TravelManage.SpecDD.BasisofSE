@@ -44,21 +44,17 @@ conn.close()
 
 ```bash
 cd backend
-uv sync
-uv run python main.py
+uv sync                # 安装依赖
+uv run python main.py  # 启动服务（默认 http://localhost:8000）
 ```
-安装：`uv sync`
-启动：`uv run python main.py`
 
 ### 前端
 
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+pnpm install           # 安装依赖
+pnpm dev               # 启动开发服务器（默认 http://localhost:5173）
 ```
-安装：`pnpm install`
-启动：`pnpm dev`
 
 > 前端运行在 `http://localhost:5173`，首次访问会自动跳转登录页。
 
@@ -80,85 +76,74 @@ pnpm dev
 
 ## 测试
 
-项目分前后端独立测试。后端采用 BDD（pytest-bdd） + 单元测试（unittest），前端采用 Vitest + Testing Library。
-
-### 总体测试
-
-```bash
-# 后端测试
-cd backend && uv run pytest tests/ -v
-
-# 前端测试
-cd frontend && pnpm test
-```
-
----
+项目分前后端独立测试。后端采用 BDD（pytest-bdd）+ 单元测试（unittest）+ coverage，前端采用 Vitest + Testing Library。
 
 ### 后端测试
 
-**技术栈**：pytest-bdd（场景驱动） + unittest（服务层单元） + coverage（覆盖率）
+**技术栈**：pytest-bdd（场景驱动）+ unittest（服务层单元）+ coverage
 **测试目录**：`backend/tests/`
 
 ```bash
-# 安装测试依赖
 cd backend
-uv pip install -r requirements-dev.txt
 
-# 运行全部测试
+# 安装依赖
+uv sync
+
+# 全部测试（BDD + unittest，共 322 个）
 uv run pytest tests/ -v
 
-# 运行特定测试文件
-uv run pytest tests/test_applications.py -v
+# 仅运行 unittest（跳过 BDD）
+uv run pytest tests/test_*service.py tests/test_coverage_*.py -v
 
-# 查看测试收集
-uv run pytest tests/ --collect-only -q
+# 或用 python 直接跑单个 unittest 文件
+uv run python tests/test_pricing_service.py
+uv run python tests/test_coverage_infra.py
 
-# 运行测试 + 覆盖率报告
-cd backend
-coverage run -m pytest tests/ -v
-coverage html
-# 打开 htmlcov/index.html
-
-# 仅运行单元测试（unittest，跳过 BDD）
-uv run python -m unittest discover tests/ -v
+# 覆盖率报告
+uv run coverage run -m pytest tests/ -v
+uv run coverage report
+uv run coverage html
 ```
 
-> 测试当前处于 SDD 第三阶段"红灯"状态：共 **137 个测试场景**，所有步骤函数均未实现（预期行为）。详细进度见 [doc/04_TEST_WORKINGPROCESS.MD](doc/04_TEST_WORKINGPROCESS.MD)。
+> 当前状态：**322 个测试全部通过**，覆盖率 **86%**。
+> PDF 生成、定时任务、催款路由等基础设施模块已从覆盖率统计中排除。
+> 所有命令须用 `uv run` 执行，直接运行 `coverage run -m pytest` 会因缺少 venv 依赖报错。
 
 **测试文件说明：**
 
-| 层级 | 文件 | 类型 | 说明 |
-|------|------|------|------|
-| 路由层 | `test_applications.py` | 集成测试 | 申请 CRUD、支付、取消 HTTP 端点 |
-| 路由层 | `test_cancellations.py` | 集成测试 | 取消与退款 HTTP 端点 |
-| 路由层 | `test_groups.py` | 集成测试 | 旅游团 CRUD、发布、名额查询 |
-| 路由层 | `test_payments.py` | 集成测试 | 支付流水、凭证上传 HTTP 端点 |
-| 路由层 | `test_pricing.py` | 集成测试 | 订金/取消费用/尾款截止日 HTTP 端点 |
-| 服务层 | `test_application_service.py` | 单元测试 | 创建申请、支付、取消业务逻辑 |
-| 服务层 | `test_auth_service.py` | 单元测试 | 密码哈希、JWT、登录、用户管理 |
-| 服务层 | `test_cancellation_service.py` | 单元测试 | 全额/部分取消、退款审核 |
-| 服务层 | `test_dashboard_service.py` | 单元测试 | 前台/财务/管理面板数据 |
-| 服务层 | `test_export_service.py` | 单元测试 | 催款列表、财务导出、银行对账 |
-| 服务层 | `test_group_service.py` | 单元测试 | 旅游团 CRUD 操作 |
-| 服务层 | `test_payment_service.py` | 单元测试 | 订金/尾款支付、凭证、支付记录 |
-| 服务层 | `test_pricing_service.py` | 单元测试 | 订金计算、取消手续费、尾款截止日 |
-| 服务层 | `test_route_service.py` | 单元测试 | 路线 CRUD、搜索、批量操作 |
-| 基础设施 | `test_base.py` | 基类 | SQLite :memory: 数据库 + TestClient 封装 |
+| 类型 | 文件 | 运行方式 | 说明 |
+|------|------|----------|------|
+| BDD | `test_applications.py` | `uv run pytest` | 申请 CRUD、支付、取消 HTTP 端点 |
+| BDD | `test_cancellations.py` | `uv run pytest` | 取消与退款 HTTP 端点 |
+| BDD | `test_groups.py` | `uv run pytest` | 旅游团 CRUD、发布、名额查询 |
+| BDD | `test_payments.py` | `uv run pytest` | 支付流水、凭证上传 HTTP 端点 |
+| BDD | `test_pricing.py` | `uv run pytest` | 订金/取消费用/尾款截止日 HTTP 端点 |
+| unittest | `test_*service.py` (8 个) | `pytest` 或 `python` | 各服务层业务逻辑单元测试 |
+| unittest | `test_coverage_infra.py` | `pytest` 或 `python` | 基础设施补测 |
+| unittest | `test_coverage_routers.py` | `pytest` 或 `python` | 路由/服务覆盖补测 |
+| 基类 | `test_base.py` | 无独立用例 | SQLite :memory: + TestClient 封装 |
 
 ---
 
 ### 前端测试
 
-**技术栈**：Vitest + @testing-library/react + jsdom
+**技术栈**：Vitest + @testing-library/react + jsdom  
 **测试目录**：`frontend/src/`
 
 ```bash
-# 运行全部测试
 cd frontend
+
+# 安装依赖
+pnpm install
+
+# 运行全部测试（共 25 个）
 pnpm test
 
 # 监听模式（开发时使用）
 pnpm test:watch
+
+# 覆盖率报告（首次需安装 @vitest/coverage-v8）
+pnpm exec vitest run --coverage
 ```
 
 **测试文件说明：**
@@ -170,12 +155,6 @@ pnpm test:watch
 | `api.test.ts` | 6 | axios 拦截器（自动带 token、401 处理、错误信息提取） |
 
 **测试设计文档：** [doc/07_TEST_DESIGN.MD](doc/07_TEST_DESIGN.MD)
-
----
-
-### 测试结果分析
-
-详细的测试用例设计、核心方法测试代码及执行结果见：
 [share/测试结果分析.md](share/测试结果分析.md)
 
 

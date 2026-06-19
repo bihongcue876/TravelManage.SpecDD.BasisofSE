@@ -20,7 +20,6 @@ class TestCreateGroup(BaseTest):
 
     def test_create_group_success(self):
         """成功创建旅游团"""
-        self._seed_route()
         resp = self.client.post("/api/groups", json={
             "route_id": 1, "code": "NEWGROUP",
             "departure_date": "2026-08-20", "deadline": "2026-08-10",
@@ -43,7 +42,6 @@ class TestCreateGroup(BaseTest):
 
     def test_create_group_invalid_deadline(self):
         """截止日 ≥ 出发日 → 400"""
-        self._seed_route()
         resp = self.client.post("/api/groups", json={
             "route_id": 1, "code": "BADDATE",
             "departure_date": "2026-08-10", "deadline": "2026-08-20",
@@ -57,8 +55,7 @@ class TestUpdateGroup(BaseTest):
 
     def setUp(self):
         super().setUp()
-        self._seed_route()
-        self._seed_group()
+        self._seed_group(is_published=False)
 
     def test_update_group_unpublished(self):
         """更新未发布的团 → 成功"""
@@ -80,7 +77,6 @@ class TestPublishGroup(BaseTest):
 
     def setUp(self):
         super().setUp()
-        self._seed_route()
         self._seed_group(is_published=False)
 
     def test_publish_group_success(self):
@@ -111,7 +107,6 @@ class TestAvailability(BaseTest):
 
     def setUp(self):
         super().setUp()
-        self._seed_route()
         self._seed_group(max_pax=30)
 
     def test_check_availability(self):

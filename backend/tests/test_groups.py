@@ -80,7 +80,7 @@ def test_balance_deadline_group_not_found(): pass
 
 @given('系统中存在旅游路线 "武汉-三亚3日游"，路线ID为 1')
 def route_exists_default(db):
-    db.add(Route(id=1, name="武汉-三亚3日游"))
+    db.add(Route(id=1, code="RT0000000001", name="武汉-三亚3日游"))
     db.commit()
 
 @given(parsers.cfparse('存在旅游团ID为 {group_id:d}，状态为 "{status}"'))
@@ -122,7 +122,7 @@ def multiple_groups_mixed_status(db):
 @given('系统中存在多个旅游团，属于不同路线')
 def multiple_groups_different_routes(db):
     for i in range(2):
-        db.add(Route(id=i+2, name=f"路线{i+2}"))
+        db.add(Route(id=i+2, code=f"RT{i+2:010d}", name=f"路线{i+2}"))
     db.commit()
     for i in range(3):
         db.add(Group(route_id=(i%2)+1, code=f"GR{i+1}", departure_date=date(2026,8,10+i*10), deadline=date(2026,6,1), max_pax=20, adult_price=Decimal("2000"), child_price=Decimal("1000"), is_published=True))

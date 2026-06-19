@@ -18,13 +18,22 @@ from services import application as app_service
 from schemas import ParticipantCreate
 
 
+class _FixedToday:
+    """Python 3.14+: 用模拟类替换模块中的 date，避免直接 patch 内置 C 类型 datetime.date"""
+    @staticmethod
+    def today():
+        return date(2026, 5, 13)
+
+
 class TestCancelApplication(BaseTest):
     """全额取消测试"""
+    FIXED_TODAY = date(2026, 5, 13)
 
     def setUp(self):
         super().setUp()
         self.group = self._seed_group(
-            departure_date=date.today() + timedelta(days=60),
+            departure_date=self.FIXED_TODAY + timedelta(days=60),
+            deadline=self.FIXED_TODAY + timedelta(days=30),
             adult_price=Decimal("2000"),
             child_price=Decimal("1000"),
         )
@@ -37,9 +46,7 @@ class TestCancelApplication(BaseTest):
 
     def test_cancel_over_30_days_no_fee(self):
         """出发前≥30天 → 无手续费"""
-        # 固定今天，让 departure 在 30 天后
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
-            # 此时 departure 是 60 天后 → D≥30
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id, reason="个人原因", channel="original")
             self.assertEqual(app.state, AppState.CANCELLED)
             self.assertEqual(refund.cancel_fee, Decimal("0"))
@@ -47,35 +54,39 @@ class TestCancelApplication(BaseTest):
 
     def test_cancel_20_days_20_percent_fee(self):
         """D=20 → 20%手续费"""
-        self.group.departure_date = date.today() + timedelta(days=20)
+        self.group.departure_date = self.FIXED_TODAY + timedelta(days=20)
+        self.group.deadline = self.FIXED_TODAY + timedelta(days=10)
         self.db.commit()
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id)
             self.assertEqual(refund.cancel_fee, Decimal("520"))   # 20% of 2600
             self.assertEqual(refund.refund_amount, Decimal("2080"))
 
     def test_cancel_5_days_50_percent_fee(self):
         """D=5 → 50%手续费"""
-        self.group.departure_date = date.today() + timedelta(days=5)
+        self.group.departure_date = self.FIXED_TODAY + timedelta(days=5)
+        self.group.deadline = self.FIXED_TODAY + timedelta(days=2)
         self.db.commit()
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id)
             self.assertEqual(refund.cancel_fee, Decimal("1300"))   # 50% of 2600
             self.assertEqual(refund.refund_amount, Decimal("1300"))
 
     def test_cancel_departure_day_full_fee(self):
         """出发当天 → 100%手续费"""
-        self.group.departure_date = date.today()
+        self.group.departure_date = self.FIXED_TODAY
+        self.group.deadline = self.FIXED_TODAY - timedelta(days=1)
         self.db.commit()
-        app, refund = app_service.cancel_application(self.db, self.app.id)
-        self.assertEqual(refund.cancel_fee, Decimal("2600"))
-        self.assertEqual(refund.refund_amount, Decimal("0"))
+        with patch("services.pricing.date", _FixedToday):
+            app, refund = app_service.cancel_application(self.db, self.app.id)
+            self.assertEqual(refund.cancel_fee, Decimal("2600"))
+            self.assertEqual(refund.refund_amount, Decimal("0"))
 
     def test_cancel_deposit_only(self):
         """仅付订金时取消"""
         self.app.paid_balance = Decimal("0")
         self.db.commit()
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id)
             self.assertEqual(refund.refund_amount, Decimal("600"))
 
@@ -93,13 +104,13 @@ class TestCancelApplication(BaseTest):
         self.app.paid_balance = Decimal("0")
         self.app.total_price = Decimal("10000")
         self.db.commit()
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id)
             self.assertEqual(refund.status, "pending")  # 需审核
 
     def test_cancel_refund_auto_approved(self):
         """退款<5000自动通过"""
-        with patch("services.application.date.today", return_value=date(2026, 5, 13)):
+        with patch("services.pricing.date", _FixedToday):
             app, refund = app_service.cancel_application(self.db, self.app.id)
             self.assertIn(refund.status, ("completed", "pending"))
             # 2600 < 5000 → completed

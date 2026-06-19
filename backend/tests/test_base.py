@@ -158,6 +158,7 @@ class BaseTest(unittest.TestCase):
         application_id: int = 1,
         name: str = "张三",
         gender: str = "M",
+        phone: str = "",
         is_leader: bool = True,
     ) -> Participant:
         p = Participant(
@@ -165,6 +166,7 @@ class BaseTest(unittest.TestCase):
             application_id=application_id,
             name=name,
             gender=gender,
+            phone=phone,
             is_leader=is_leader,
         )
         self.db.add(p)

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from database import engine, Base, SessionLocal
+from database import Base, get_engine, get_sessionlocal
 from routers import routes, groups, applications, tasks, dashboard
 from routers.auth import auth_router, users_router
 from tasks_scheduler import init_scheduler
@@ -16,7 +16,7 @@ scheduler = None
 
 def seed_initial_data():
     """初始化种子数据：创建默认用户"""
-    db = SessionLocal()
+    db = get_sessionlocal()()
     try:
         default_users = [
             {"username": "admin", "password": "admin123", "name": "系统管理员", "role": Role.ADMIN, "email": "admin@travel.com"},
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
 os.makedirs("uploads/vouchers", exist_ok=True)
 os.makedirs("exports", exist_ok=True)
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=get_engine())
 
 app = FastAPI(
     title="Travel Management API",
