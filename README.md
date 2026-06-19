@@ -86,16 +86,16 @@ pnpm dev               # 启动开发服务器（默认 http://localhost:5173）
 ```bash
 cd backend
 
-# 安装依赖
-uv sync
+# 安装依赖（含测试依赖）
+uv sync --extra dev
 
 # 全部测试（BDD + unittest，共 322 个）
 uv run pytest tests/ -v
 
 # 仅运行 unittest（跳过 BDD）
-uv run pytest tests/test_*service.py tests/test_coverage_*.py -v
+uv run pytest tests/ --ignore=tests/test_applications.py --ignore=tests/test_cancellations.py --ignore=tests/test_groups.py --ignore=tests/test_payments.py --ignore=tests/test_pricing.py -v
 
-# 或用 python 直接跑单个 unittest 文件
+# 或用 python 直接跑单个 unittest 文件（Windows 下推荐此方式）
 uv run python tests/test_pricing_service.py
 uv run python tests/test_coverage_infra.py
 
