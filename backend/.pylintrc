@@ -1,0 +1,39 @@
+[MASTER]
+ignore=tests
+extension-pkg-allow-list=pydantic
+load-plugins=
+
+[MESSAGES CONTROL]
+disable=
+    C0114,      # missing-module-docstring
+    C0115,      # missing-class-docstring
+    C0116,      # missing-function-docstring
+    C0103,      # invalid-name
+    C0301,      # line-too-long（由 ruff format 管理）
+    R0801,      # similar-lines
+    R0903,      # too-few-public-methods（Pydantic models）
+    R0913,      # too-many-arguments
+    W0718,      # broad-exception-catch
+    W0511,      # fixme（允许 TODO 标签）
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+good-names=i,j,k,e,ex,Run,_,pk,id,db
+
+[DESIGN]
+max-args=10
+max-attributes=12
+max-locals=20
+max-returns=6
+max-branches=20
+max-statements=60
+
+[TYPECHECK]
+ignored-classes=pydantic,BaseModel,Session
+ignored-modules=pydantic
+
+[IMPORTS]
+known-standard-library=
+known-third-party=fastapi,sqlalchemy,pydantic

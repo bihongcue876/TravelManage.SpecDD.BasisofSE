@@ -68,7 +68,7 @@ pnpm dev               # 启动开发服务器（默认 http://localhost:5173）
 |--------|------|------|----------|
 | `admin` | `admin123` | 系统管理员 | 所有模块：管理路线/旅游团、催款报表、用户管理、退款审批 |
 | `frontdesk` | `123456` | 前台员工 | 旅游团查询、创建申请、支付订金/尾款、录入参加者 |
-| `finance` | `123456` | 财务人员 | 催款清单、财务流水、导出报表、催款提醒、审批退款 |
+| `finance` | `123456` | 财V务人员 | 催款清单、财务流水、导出报表、催款提醒、审批退款 |
 
 > 首次登录建议使用 `admin` / `admin123`，然后在「用户管理」中创建其他角色账户。
 
@@ -157,7 +157,95 @@ pnpm exec vitest run --coverage
 **测试设计文档：** [doc/07_TEST_DESIGN.MD](doc/07_TEST_DESIGN.MD)
 [share/测试结果分析.md](share/测试结果分析.md)
 
+---
 
+## 静态代码检查
+
+项目配置了后端（Python）和前端（TypeScript/React）两套静态代码检查工具，采用 VS Code 集成 + 命令行两种方式运行。
+
+### 后端代码检查（ruff + pylint）
+
+**技术栈**：ruff（快速 lint + format）+ pylint（深度静态分析）
+
+#### 安装依赖
+
+```bash
+cd backend
+uv sync --extra dev
+```
+
+#### 运行检查
+
+**ruff 检查：**
+```bash
+cd backend
+uv run ruff check .
+```
+
+**ruff 自动修复（可修复的规则）：**
+```bash
+cd backend
+uv run ruff check . --fix
+```
+
+**ruff 格式化（等价于 black）：**
+```bash
+cd backend
+uv run ruff format .
+```
+
+**pylint 检查：**
+```bash
+cd backend
+uv run pylint backend/
+```
+> pylint 默认跳过 `tests/` 目录（已在 `.pylintrc` 中配置）。
+
+#### VS Code 集成
+
+安装 VS Code 扩展：
+- [Ruff](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff) — 实时 lint + format 支持
+- [Pylint](https://marketplace.visualstudio.com/items?itemName=ms-python.pylint) — 与 VS Code Python 扩展配合
+
+安装后，打开任意 `.py` 文件即可看到实时检查结果（波浪线提示）。
+
+> **注意：** 本仓库的 `.pylintrc` 已配置为兼容 FastAPI/Pydantic 项目（禁用了一些不必要的规则）。首次运行检查可能会报告大量问题，请按需逐步清理。
+
+---
+
+### 前端代码检查（ESLint）
+
+**技术栈**：ESLint 9（flat config）+ typescript-eslint + react-hooks 插件
+
+#### 安装依赖
+
+```bash
+cd frontend
+pnpm install
+```
+
+#### 运行检查
+
+```bash
+cd frontend
+
+# 检查
+pnpm lint
+
+# 检查并自动修复
+pnpm lint:fix
+```
+
+#### VS Code 集成
+
+安装 VS Code 扩展：
+- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) — 实时检查 + 自动修复
+
+安装后，打开任意 `.ts` / `.tsx` 文件即可看到实时检查结果。ESLint 扩展会自动读取项目根目录的 `eslint.config.js`（flat config 格式），无需额外配置。
+
+> **注意：** 首次运行 `pnpm lint` 可能会报告较多问题，请按需逐步修复。
+
+---
 
 ## 项目简介
 本系统为武汉 XXX 旅行社的业务申请信息系统，用于替代手工流程，实现旅游团查询、申请、订金与余款管理、参加者信息维护、取消/变更、旅游路线与价格管理等功能。系统包括员工使用的后台管理界面，并支持与财务系统的数据导出对接。
