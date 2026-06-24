@@ -19,7 +19,7 @@ import {
   fetchFrontdeskDashboard,
   fetchFinanceDashboard,
   fetchAdminDashboard,
-  fetchDailyFinance,
+  fetchFlowTrend,
 } from '../api'
 import dayjs from 'dayjs'
 
@@ -31,16 +31,6 @@ interface TrendDataItem {
   type: string
 }
 
-function generateMockTrendData(): TrendDataItem[] {
-  const result: TrendDataItem[] = []
-  for (let i = 6; i >= 0; i--) {
-    const date = dayjs().subtract(i, 'day').format('MM-DD')
-    result.push({ date, value: Math.round(Math.random() * 8000 + 2000), type: '收入' })
-    result.push({ date, value: Math.round(Math.random() * 2000 + 200), type: '退款' })
-  }
-  return result
-}
-
 function FlowTrendChart() {
   const [trendData, setTrendData] = useState<TrendDataItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,22 +38,16 @@ function FlowTrendChart() {
   useEffect(() => {
     const loadTrend = async () => {
       try {
-        const raw = await fetchDailyFinance({ fields: 'date,income,refund' })
-        if (Array.isArray(raw) && raw.length > 0) {
-          const mapped: TrendDataItem[] = []
-          raw.forEach((item: Record<string, unknown>) => {
-            const dateStr = typeof item.date === 'string' ? dayjs(item.date).format('MM-DD') : ''
-            if (dateStr) {
-              mapped.push({ date: dateStr, value: Number(item.income) || 0, type: '收入' })
-              mapped.push({ date: dateStr, value: Number(item.refund) || 0, type: '退款' })
-            }
-          })
-          setTrendData(mapped)
-        } else {
-          setTrendData(generateMockTrendData())
-        }
+        const raw = await fetchFlowTrend({ days: 7 })
+        const mapped: TrendDataItem[] = []
+        raw.forEach((item) => {
+          const dateStr = dayjs(item.date).format('MM-DD')
+          mapped.push({ date: dateStr, value: item.income, type: '收入' })
+          mapped.push({ date: dateStr, value: item.refund, type: '退款' })
+        })
+        setTrendData(mapped)
       } catch {
-        setTrendData(generateMockTrendData())
+        setTrendData([])
       } finally {
         setLoading(false)
       }

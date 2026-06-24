@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
 import csv
@@ -178,6 +178,33 @@ def log_reminder(db: Session, app_id: int, reminder_type: str, content: Optional
     db.commit()
     db.refresh(log)
     return log
+
+
+def generate_flow_trend(db: Session, days: int = 7) -> List[dict]:
+    """生成近 N 天流水趋势数据（按日聚合收入/退款）"""
+    from sqlalchemy import func as sa_func
+    from models import PaymentLog, Refund
+
+    today = date.today()
+    result = []
+
+    for i in range(days - 1, -1, -1):
+        day = today - timedelta(days=i)
+        # 当日收入（deposit + balance）
+        income = db.query(sa_func.coalesce(sa_func.sum(PaymentLog.amount), 0)).filter(
+            sa_func.date(PaymentLog.created_at) == day
+        ).scalar()
+        # 当日退款（已完成/已批准的）
+        refund = db.query(sa_func.coalesce(sa_func.sum(Refund.refund_amount), 0)).filter(
+            sa_func.date(Refund.refunded_at) == day,
+            Refund.status.in_(["completed", "approved"])
+        ).scalar()
+        result.append({
+            "date": day.isoformat(),
+            "income": float(income),
+            "refund": float(refund),
+        })
+    return result
 
 
 def generate_batch_documents(db: Session, application_ids: List[int], doc_type: str) -> dict:

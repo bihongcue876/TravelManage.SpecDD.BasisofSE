@@ -307,6 +307,7 @@ draft ──(取消)──→ cancelled
 
 | 方法 | 路径 | 说明 | 权限 |
 |------|------|------|------|
+| GET | `/api/tasks/flow-trend` | 近N天流水趋势（按日聚合收入/退款） | finance/admin |
 | GET | `/api/tasks/daily-reminders` | 每日催款列表 | finance/admin |
 | GET | `/api/tasks/daily-finance` | 每日财务记录 | finance/admin |
 | POST | `/api/tasks/daily-finance/export` | 导出财务数据（CSV/Excel/JSON） | finance/admin |
@@ -320,6 +321,11 @@ draft ──(取消)──→ cancelled
 | GET | `/api/tasks/bank-reconciliation` | 对账记录列表 | finance/admin |
 | GET | `/api/tasks/bank-reconciliation/{id}` | 对账记录详情 | finance/admin |
 | GET | `/api/tasks/bank-reconciliation/{id}/items` | 对账明细项 | finance/admin |
+
+**`GET /api/tasks/flow-trend?days=7`**
+- 返回近 N 天的按日聚合收入/退款数据
+- `days` 参数：1-90，默认 7
+- 响应：`[{ date: "2026-06-18", income: 5000.00, refund: 0.00 }, ...]`
 
 ### 3.5 认证 `/api/auth`
 

@@ -336,6 +336,12 @@ export interface FinanceExportRequest {
   fields?: string[]
 }
 
+export interface FlowTrendItem {
+  date: string
+  income: number
+  refund: number
+}
+
 export interface FinanceExportResponse {
   export_id: number
   file_path: string

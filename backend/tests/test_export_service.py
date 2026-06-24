@@ -158,5 +158,49 @@ class TestFinanceReport(BaseTest):
         self.assertEqual(report["period"], "daily")
 
 
+class TestFlowTrend(BaseTest):
+    """流水趋势测试"""
+
+    def setUp(self):
+        super().setUp()
+        self.group = self._seed_group()
+        self.app = self._seed_application(
+            state=AppState.DEPOSIT_PAID,
+            paid_deposit=Decimal("600"),
+            total_price=Decimal("5000"),
+        )
+        # 创建一条支付记录
+        self.payment_log = PaymentLog(
+            application_id=self.app.id,
+            type="deposit",
+            amount=Decimal("600"),
+            payment_method="wechat",
+        )
+        self.db.add(self.payment_log)
+        self.db.commit()
+
+    def test_flow_trend_returns_7_days(self):
+        """返回7天数据"""
+        trend = export_service.generate_flow_trend(self.db, days=7)
+        self.assertEqual(len(trend), 7)
+
+    def test_flow_trend_with_income(self):
+        """包含收入数据"""
+        trend = export_service.generate_flow_trend(self.db, days=7)
+        today_entry = next(t for t in trend if t["date"] == date.today().isoformat())
+        self.assertEqual(today_entry["income"], 600.0)
+        self.assertEqual(today_entry["refund"], 0.0)
+
+    def test_flow_trend_empty(self):
+        """无数据时返回0"""
+        from datetime import date as dt_date
+        trend = export_service.generate_flow_trend(self.db, days=3)
+        self.assertEqual(len(trend), 3)
+        for entry in trend:
+            self.assertIn("date", entry)
+            self.assertIn("income", entry)
+            self.assertIn("refund", entry)
+
+
 if __name__ == "__main__":
     unittest.main()

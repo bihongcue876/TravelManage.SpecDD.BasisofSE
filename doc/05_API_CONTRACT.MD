@@ -69,6 +69,7 @@
 
 | 方法 | 路径 | 描述 | 状态码 |
 |------|------|------|--------|
+| GET | `/api/tasks/flow-trend` | 近N天流水趋势（按日聚合收入/退款） | 200 |
 | GET | `/api/tasks/daily-reminders` | 查询催款清单 | 200 |
 | GET | `/api/tasks/daily-finance` | 查询资金流水 | 200 |
 | POST | `/api/tasks/daily-finance/export` | 导出资金流水 | 200 |

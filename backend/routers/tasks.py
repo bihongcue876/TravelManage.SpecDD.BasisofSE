@@ -17,6 +17,15 @@ from services import export as export_service
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
+@router.get("/flow-trend", response_model=List[dict])
+def get_flow_trend(
+    days: int = Query(7, ge=1, le=90, description="天数"),
+    db: Session = Depends(get_db)
+):
+    """近 N 天流水趋势（按日聚合收入/退款）"""
+    return export_service.generate_flow_trend(db, days)
+
+
 @router.get("/daily-reminders", response_model=DailyReminderResponse)
 def get_daily_reminders(
     target_date: Optional[date] = Query(None, alias="date"),

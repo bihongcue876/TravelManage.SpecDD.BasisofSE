@@ -5,7 +5,8 @@ import type {
   DepositPreview, BalanceDeadline, DailyReminder, Availability,
   RemainingBalance, PaymentLogDetail, ParticipantEditHistory,
   DuplicateParticipantWarning, RefundDetail, ReminderLog,
-  PaymentOrder, FinanceReport, BankReconciliation, BankReconciliationItem
+  PaymentOrder, FinanceReport, BankReconciliation, BankReconciliationItem,
+  FlowTrendItem,
 } from './types'
 
 const api = axios.create({
@@ -194,6 +195,9 @@ export const fetchReminderLogs = (id: number): Promise<ReminderLog[]> =>
 
 export const generateOrderNo = (id: number, orderType?: string): Promise<PaymentOrder> =>
   api.post(`/applications/${id}/generate-order-no`, null, { params: { order_type: orderType } })
+
+export const fetchFlowTrend = (params?: { days?: number }): Promise<FlowTrendItem[]> =>
+  api.get('/tasks/flow-trend', { params })
 
 export const fetchDailyReminders = (params?: { date?: string }): Promise<DailyReminder> =>
   api.get('/tasks/daily-reminders', { params })
