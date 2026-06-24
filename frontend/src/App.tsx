@@ -16,7 +16,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, UserRole } from './auth'
 import Login from './pages/Login'
 import GroupList from './pages/GroupList'
-import ApplyCreate from './pages/ApplyCreate'
+import ApplyWizard from './pages/ApplyWizard'
 import AppDetail from './pages/AppDetail'
 import AdminGroups from './pages/AdminGroups'
 import AdminRoutes from './pages/AdminRoutes'
@@ -42,7 +42,7 @@ const roleNameMap: Record<string, string> = {
 }
 
 const roleColorMap: Record<string, string> = {
-  admin: '#0958d9',
+  admin: '#0F5B5C',
   frontdesk: '#1677ff',
   finance: '#52c41a',
 }
@@ -119,7 +119,7 @@ function AppLayout() {
       }}>
         <div
           style={{
-            color: '#0958d9',
+            color: '#0F5B5C',
             fontSize: 18,
             fontWeight: 700,
             marginRight: 32,
@@ -143,7 +143,7 @@ function AppLayout() {
           </Tag>
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#0958d9' }} />
+              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#0F5B5C' }} />
               <span style={{ color: '#333', fontSize: 14 }}>{user?.name || user?.username}</span>
             </Space>
           </Dropdown>
@@ -162,7 +162,7 @@ function AppLayout() {
           <Route path="/groups" element={
             hasRole('frontdesk', 'admin') ? <GroupList /> : <div style={{ padding: 48, textAlign: 'center' }}>无权限访问</div>
           } />
-          <Route path="/apply/:groupId" element={<ApplyCreate />} />
+          <Route path="/apply/:groupId" element={<ApplyWizard />} />
           <Route path="/applications/:id" element={<AppDetail />} />
           <Route path="/admin/groups" element={
             hasRole('admin') ? <AdminGroups /> : <div style={{ padding: 48, textAlign: 'center' }}>无权限访问</div>
@@ -189,7 +189,7 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#0958d9',
+          colorPrimary: '#0F5B5C',
           borderRadius: 8,
           colorBgContainer: '#ffffff',
           boxShadow: '0 1px 6px rgba(0,0,0,0.08)',

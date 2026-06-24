@@ -35,6 +35,31 @@ const stateMap: Record<string, { text: string; color: string }> = {
   cancelled: { text: '已取消', color: 'error' }
 }
 
+interface TimelineNode {
+  state: string
+  label: string
+  color: string
+  timestampField: string
+}
+
+const TIMELINE_NODES: TimelineNode[] = [
+  { state: 'draft', label: '已申请', color: 'gray', timestampField: 'created_at' },
+  { state: 'deposit_paid', label: '已交订金', color: 'blue', timestampField: 'deposit_paid_at' },
+  { state: 'slip_sent', label: '已发交款单', color: 'blue', timestampField: 'slip_sent_at' },
+  { state: 'balance_paid', label: '已交余款', color: 'green', timestampField: 'balance_paid_at' },
+  { state: 'confirmed', label: '已完成', color: 'green', timestampField: 'confirmed_at' },
+  { state: 'cancelled', label: '已取消', color: 'red', timestampField: 'cancelled_at' },
+]
+
+const STATE_INDEX: Record<string, number> = {
+  draft: 0,
+  deposit_paid: 1,
+  slip_sent: 2,
+  balance_paid: 3,
+  confirmed: 4,
+  cancelled: 5,
+}
+
 const paymentMethodOptions = [
   { label: '现金', value: 'cash' },
   { label: '银行转账', value: 'bank_transfer' },
@@ -288,6 +313,50 @@ function AppDetail() {
 
   if (!application) return null
 
+  const getTimestamp = (field: string): string | null => {
+    if (field === 'created_at') return application.created_at
+    if (field === 'cancelled_at') return application.cancelled_at
+    if (field === 'deposit_paid_at') {
+      return paymentLogs.find(l => l.type === 'deposit')?.created_at ?? null
+    }
+    if (field === 'balance_paid_at') {
+      return paymentLogs.find(l => l.type === 'balance')?.created_at ?? null
+    }
+    if (field === 'slip_sent_at') return null
+    if (field === 'confirmed_at') return null
+    return null
+  }
+
+  const renderTimeline = () => {
+    const currentIndex = STATE_INDEX[application.state] ?? 0
+    const isCancelled = application.state === 'cancelled'
+
+    return (
+      <Timeline
+        items={TIMELINE_NODES.map((node, index) => {
+          const isReached = isCancelled
+            ? (node.state === 'cancelled' || index < currentIndex)
+            : index <= currentIndex
+          const isCurrent = node.state === application.state
+
+          return {
+            color: isReached ? node.color : 'gray',
+            children: (
+              <div>
+                <span style={{ fontWeight: isCurrent ? 600 : 400 }}>
+                  {node.label}
+                </span>
+                <div style={{ fontSize: 12, color: '#999' }}>
+                  {isReached ? (getTimestamp(node.timestampField) ? formatDateTime(getTimestamp(node.timestampField)!) : '—') : '—'}
+                </div>
+              </div>
+            ),
+          }
+        })}
+      />
+    )
+  }
+
   const currentStep = application.state === 'draft' ? 1 :
     application.state === 'deposit_paid' && !application.info_completed ? 2 :
     application.state === 'deposit_paid' && application.info_completed &&
@@ -373,6 +442,8 @@ function AppDetail() {
               </Col>
             </Row>
           )}
+          <Divider>订单状态流转</Divider>
+          {renderTimeline()}
         </div>
       )
     },
@@ -540,18 +611,18 @@ function AppDetail() {
             style={{ borderRadius: 8, marginBottom: 16 }}
           >
             <div style={{ marginBottom: 12 }}>
-              <Tag color="#0958d9" style={{ fontSize: 13, padding: '2px 10px' }}>{application.group?.code}</Tag>
+              <Tag color="#0F5B5C" style={{ fontSize: 13, padding: '2px 10px' }}>{application.group?.code}</Tag>
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <CalendarOutlined style={{ marginRight: 6, color: '#0958d9' }} />
+              <CalendarOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
               出发：{application.group?.departure_date}
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <UserOutlined style={{ marginRight: 6, color: '#0958d9' }} />
+              <UserOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
               申请人：{application.name}
             </div>
             <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>
-              <PhoneOutlined style={{ marginRight: 6, color: '#0958d9' }} />
+              <PhoneOutlined style={{ marginRight: 6, color: '#0F5B5C' }} />
               电话：{application.phone}
             </div>
             <Divider style={{ margin: '12px 0' }} />

@@ -38,12 +38,12 @@ function Login() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        background: 'linear-gradient(135deg, #0958d9 0%, #4096ff 100%)',
+        background: 'linear-gradient(135deg, #0F5B5C 0%, #4096ff 100%)',
       }}
     >
       <Card style={{ width: 440, borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <GlobalOutlined style={{ fontSize: 48, color: '#0958d9', marginBottom: 16 }} />
+          <GlobalOutlined style={{ fontSize: 48, color: '#0F5B5C', marginBottom: 16 }} />
           <Title level={3} style={{ marginBottom: 4 }}>旅游业务管理系统</Title>
           <Text type="secondary">请登录您的账户</Text>
         </div>
