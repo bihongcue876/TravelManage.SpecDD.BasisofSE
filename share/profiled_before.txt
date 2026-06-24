@@ -1,0 +1,53 @@
+PS D:\Projects\TravelManageSSD\backend> uv run python run_profiled.py
+============================================================
+性能分析模式已启动（profile）
+按 Ctrl+C 停止后输出分析结果
+============================================================
+INFO:     Started server process [54136]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54136]
+
+============================================================
+性能分析结果 — 按累计耗时排序（前 30）
+============================================================
+         89685 function calls (86392 primitive calls) in 0.281 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1837 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.281    0.281 profile:0(uvicorn.run(app, host='0.0.0.0', port=8000))
+     65/1    0.000    0.000    0.281    0.281 :0(exec)
+     10/1    0.000    0.000    0.281    0.281 <string>:1(<module>)
+        1    0.000    0.000    0.281    0.281 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\uvicorn\main.py:476(run)
+        1    0.000    0.000    0.281    0.281 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\uvicorn\server.py:66(run)
+        1    0.000    0.000    0.281    0.281 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:169(run)
+        3    0.000    0.000    0.281    0.094 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:683(run_until_complete)
+        3    0.000    0.000    0.281    0.094 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:672(run_forever)
+        1    0.000    0.000    0.266    0.266 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:87(run)
+      207    0.000    0.000    0.266    0.001 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py:1977(_run_once)
+      216    0.000    0.000    0.219    0.001 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py:92(_run)
+      216    0.000    0.000    0.219    0.001 :0(run)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\uvicorn\lifespan\on.py:78(main)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py:27(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\fastapi\applications.py:1156(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\applications.py:86(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\middleware\errors.py:149(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\middleware\cors.py:78(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py:47(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:15(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\routing.py:656(__call__)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\routing.py:662(app)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\starlette\routing.py:629(lifespan)
+      8/1    0.000    0.000    0.141    0.141 C:\Users\Lenovo\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:209(__aenter__)
+     14/2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\fastapi\routing.py:212(merged_lifespan)
+        2    0.000    0.000    0.141    0.070 D:\Projects\TravelManageSSD\backend\main.py:49(lifespan)
+        1    0.000    0.000    0.109    0.109 D:\Projects\TravelManageSSD\backend\main.py:17(seed_initial_data)
+    60/11    0.000    0.000    0.094    0.009 <frozen importlib._bootstrap>:1360(_find_and_load)
+        3    0.000    0.000    0.094    0.031 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py:2921(query)
+        3    0.000    0.000    0.094    0.031 D:\Projects\TravelManageSSD\backend\.venv\Lib\site-packages\sqlalchemy\orm\query.py:236(__init__)

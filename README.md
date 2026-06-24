@@ -159,6 +159,42 @@ pnpm exec vitest run --coverage
 
 ---
 
+## 性能分析
+
+### 后端性能分析（profile）
+
+**技术栈**：profile（Python 标准库，纯 Python 实现）
+
+profile 是 Python 标准库自带的性能分析器，零额外依赖。`run_profiled.py` 会在整个运行期间记录每个函数的调用次数与耗时，按 Ctrl+C 停止后在终端打印排名。
+
+#### 运行方式
+
+```bash
+cd backend
+uv run python run_profiled.py
+```
+
+正常发送请求进行业务操作，完毕后按 **Ctrl+C** 停止服务器，终端自动输出按累计耗时排序的前 30 个函数。
+
+#### 输出示例
+
+```
+============================================================
+性能分析结果 — 按累计耗时排序（前 30）
+============================================================
+         4823 function calls (4768 primitive calls) in 0.152 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.001    0.001    0.124    0.124 routers/applications.py:1(<module>)
+        ...
+```
+
+> **注意：** profile 是纯 Python 实现，会有额外开销。日常开发请用 `python main.py` 正常启动。
+
+---
+
 ## 静态代码检查
 
 项目配置了后端（Python）和前端（TypeScript/React）两套静态代码检查工具，采用 VS Code 集成 + 命令行两种方式运行。
