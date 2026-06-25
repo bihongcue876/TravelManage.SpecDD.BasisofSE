@@ -67,3 +67,5 @@ codes.md
 actions.md
 backend/travel_management_backend.egg-info/*
 frontend/coverage
+
+压力测试
